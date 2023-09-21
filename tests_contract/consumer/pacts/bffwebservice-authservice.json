@@ -1,0 +1,990 @@
+{
+  "consumer": {
+    "name": "BffWebService"
+  },
+  "provider": {
+    "name": "AuthService"
+  },
+  "interactions": [
+    {
+      "description": "user information in auth service",
+      "providerState": "get user information in auth service",
+      "request": {
+        "method": "GET",
+        "path": "/v1/admin/user",
+        "query": "username=contracttestaccount",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": {
+            "id": "fc763eba-0905-41c5-a27f-3934ab26786c",
+            "createdTimestamp": 1664396901901,
+            "username": "contracttestaccount",
+            "enabled": true,
+            "totp": false,
+            "emailVerified": false,
+            "email": "string",
+            "federationLink": "fc763eba-0905-41c5-a27f-3934ab26786c",
+            "attributes": {
+              "LDAP_ENTRY_DN": "string",
+              "last_login": "string",
+              "LDAP_ID": "string",
+              "status": "string",
+              "createTimestamp": "string",
+              "modifyTimestamp": "string"
+            },
+            "disableableCredentialTypes": [
+
+            ],
+            "requiredActions": [
+
+            ],
+            "notBefore": 0,
+            "access": {
+              "manageGroupMembership": true,
+              "view": true,
+              "mapRoles": true,
+              "impersonate": true,
+              "manage": true
+            },
+            "first_name": "name",
+            "last_name": "name",
+            "name": "name",
+            "role": "name"
+          }
+        },
+        "matchingRules": {
+          "$.body.total": {
+            "match": "type"
+          },
+          "$.body.num_of_pages": {
+            "match": "type"
+          },
+          "$.body.result.id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.result.createdTimestamp": {
+            "match": "type"
+          },
+          "$.body.result.enabled": {
+            "match": "type"
+          },
+          "$.body.result.totp": {
+            "match": "type"
+          },
+          "$.body.result.emailVerified": {
+            "match": "type"
+          },
+          "$.body.result.email": {
+            "match": "type"
+          },
+          "$.body.result.federationLink": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.result.attributes": {
+            "match": "type"
+          },
+          "$.body.result.attributes.LDAP_ENTRY_DN": {
+            "match": "type"
+          },
+          "$.body.result.attributes.last_login": {
+            "match": "type"
+          },
+          "$.body.result.attributes.LDAP_ID": {
+            "match": "type"
+          },
+          "$.body.result.attributes.status": {
+            "match": "type"
+          },
+          "$.body.result.attributes.createTimestamp": {
+            "match": "type"
+          },
+          "$.body.result.attributes.modifyTimestamp": {
+            "match": "type"
+          },
+          "$.body.result.notBefore": {
+            "match": "type"
+          },
+          "$.body.result.access.manageGroupMembership": {
+            "match": "type"
+          },
+          "$.body.result.access.view": {
+            "match": "type"
+          },
+          "$.body.result.access.mapRoles": {
+            "match": "type"
+          },
+          "$.body.result.access.impersonate": {
+            "match": "type"
+          },
+          "$.body.result.access.manage": {
+            "match": "type"
+          },
+          "$.body.result.first_name": {
+            "match": "type"
+          },
+          "$.body.result.last_name": {
+            "match": "type"
+          },
+          "$.body.result.name": {
+            "match": "type"
+          },
+          "$.body.result.role": {
+            "match": "type"
+          }
+        }
+      }
+    },
+    {
+      "description": "user information in auth service",
+      "providerState": "update user information in auth service",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/admin/user",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "username": "contracttestaccount",
+          "last_login": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": {
+            "last_login": "2023-01-26T18:20:23"
+          }
+        },
+        "matchingRules": {
+          "$.body.result.last_login": {
+            "match": "type"
+          }
+        }
+      }
+    },
+    {
+      "description": "user information in auth service",
+      "providerState": "create user in FreeIPA in auth service",
+      "request": {
+        "method": "POST",
+        "path": "/v1/admin/users",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "username": "contracttestaccount2",
+          "email": "contract_test+2@email.com",
+          "password": "Contracttestaccount1!",
+          "first_name": "test",
+          "last_name": "account",
+          "project_code": "",
+          "project_role": ""
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": {
+            "username": "contracttestaccount2",
+            "email": "contract_test+2@email.com",
+            "first_name": "test",
+            "last_name": "account"
+          }
+        }
+      }
+    },
+    {
+      "description": "user information in auth service",
+      "providerState": "list users realm in auth service",
+      "request": {
+        "method": "GET",
+        "path": "/v1/admin/users/realm-roles",
+        "query": "username=contracttestaccount",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": [
+            {
+              "id": "fc763eba-0905-41c5-a27f-3934ab26786c",
+              "name": "contrattestproject-admin",
+              "composite": false,
+              "clientRole": false,
+              "containerId": "pilot"
+            }
+          ]
+        },
+        "matchingRules": {
+          "$.body.result": {
+            "min": 1
+          },
+          "$.body.result[*].*": {
+            "match": "type"
+          },
+          "$.body.result[*].id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.result[*].name": {
+            "match": "type"
+          },
+          "$.body.result[*].composite": {
+            "match": "type"
+          },
+          "$.body.result[*].clientRole": {
+            "match": "type"
+          },
+          "$.body.result[*].containerId": {
+            "match": "type"
+          }
+        }
+      }
+    },
+    {
+      "description": "user information in auth service",
+      "providerState": "query user by user role in auth service",
+      "request": {
+        "method": "POST",
+        "path": "/v1/admin/roles/users",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "role_names": [
+            "contrattestproject-admin"
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 3,
+          "num_of_pages": 1,
+          "result": [
+            {
+              "id": "fc763eba-0905-41c5-a27f-3934ab26786c",
+              "name": "string",
+              "username": "string",
+              "first_name": "string",
+              "last_name": "string",
+              "email": "string",
+              "permission": "string",
+              "time_created": "2022-09-28T16:28:05"
+            }
+          ]
+        },
+        "matchingRules": {
+          "$.body.total": {
+            "match": "type"
+          },
+          "$.body.num_of_pages": {
+            "match": "type"
+          },
+          "$.body.result": {
+            "min": 1
+          },
+          "$.body.result[*].*": {
+            "match": "type"
+          },
+          "$.body.result[*].id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.result[*].name": {
+            "match": "type"
+          },
+          "$.body.result[*].username": {
+            "match": "type"
+          },
+          "$.body.result[*].first_name": {
+            "match": "type"
+          },
+          "$.body.result[*].last_name": {
+            "match": "type"
+          },
+          "$.body.result[*].email": {
+            "match": "type"
+          },
+          "$.body.result[*].permission": {
+            "match": "type"
+          },
+          "$.body.result[*].time_created": {
+            "match": "type"
+          }
+        }
+      }
+    },
+    {
+      "description": "user information in auth service",
+      "providerState": "get user statistics in project in auth service",
+      "request": {
+        "method": "GET",
+        "path": "/v1/admin/roles/users/stats",
+        "query": "project_code=contrattestproject",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": {
+            "admin": 1,
+            "contributor": 1,
+            "collaborator": 0
+          }
+        },
+        "matchingRules": {
+          "$.body.total": {
+            "match": "type"
+          },
+          "$.body.num_of_pages": {
+            "match": "type"
+          },
+          "$.body.result.admin": {
+            "match": "type"
+          },
+          "$.body.result.contributor": {
+            "match": "type"
+          },
+          "$.body.result.collaborator": {
+            "match": "type"
+          }
+        }
+      }
+    },
+    {
+      "description": "authorize in auth service",
+      "providerState": "check has permission in auth service",
+      "request": {
+        "method": "GET",
+        "path": "/v1/authorize",
+        "query": "role=admin&zone=greenroom&resource=file&operation=download",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": {
+            "has_permission": true
+          }
+        },
+        "matchingRules": {
+          "$.body.result.has_permission": {
+            "match": "type"
+          }
+        }
+      }
+    },
+    {
+      "description": "event in auth service",
+      "providerState": "get event list in auth service",
+      "request": {
+        "method": "GET",
+        "path": "/v1/events",
+        "query": "project_code=contrattestproject&page=0&page_size=10&order_type=asc&order_by=timestamp",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 10,
+          "num_of_pages": 7,
+          "result": [
+            {
+              "detail": {
+              },
+              "event_type": "string",
+              "id": "fc763eba-0905-41c5-a27f-3934ab26786c",
+              "operator": "string",
+              "operator_id": "string",
+              "target_user": "string",
+              "target_user_id": "fc763eba-0905-41c5-a27f-3934ab26786c",
+              "timestamp": "string"
+            }
+          ]
+        },
+        "matchingRules": {
+          "$.body.total": {
+            "match": "type"
+          },
+          "$.body.num_of_pages": {
+            "match": "type"
+          },
+          "$.body.result": {
+            "min": 1
+          },
+          "$.body.result[*].*": {
+            "match": "type"
+          },
+          "$.body.result[*].detail": {
+            "match": "type"
+          },
+          "$.body.result[*].event_type": {
+            "match": "type"
+          },
+          "$.body.result[*].id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.result[*].operator": {
+            "match": "type"
+          },
+          "$.body.result[*].operator_id": {
+            "match": "type"
+          },
+          "$.body.result[*].target_user": {
+            "match": "type"
+          },
+          "$.body.result[*].target_user_id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.result[*].timestamp": {
+            "match": "type"
+          }
+        }
+      }
+    },
+    {
+      "description": "user invitation in auth service",
+      "providerState": "create user invitation in auth service",
+      "request": {
+        "method": "POST",
+        "path": "/v1/invitations",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "email": "contract_test+1@email.com",
+          "platform_role": "member",
+          "relationship": {
+            "project_code": "contrattestproject",
+            "project_role": "admin",
+            "inviter": "admin"
+          },
+          "invited_by": "admin",
+          "inviter_project_role": "admin"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": "success"
+        }
+      }
+    },
+    {
+      "description": "user invitation in auth service",
+      "providerState": "get user information in auth service",
+      "request": {
+        "method": "GET",
+        "path": "/v1/invitation/check/contract_test%40email.com",
+        "query": "project_code=contrattestproject",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": {
+            "name": "contracttestaccount",
+            "email": "string",
+            "status": "active",
+            "role": "member",
+            "relationship": {
+            }
+          }
+        },
+        "matchingRules": {
+          "$.body.total": {
+            "match": "type"
+          },
+          "$.body.num_of_pages": {
+            "match": "type"
+          },
+          "$.body.result.name": {
+            "match": "type"
+          },
+          "$.body.result.email": {
+            "match": "type"
+          },
+          "$.body.result.status": {
+            "match": "type"
+          },
+          "$.body.result.role": {
+            "match": "type"
+          },
+          "$.body.result.relationship": {
+            "match": "type"
+          }
+        }
+      }
+    },
+    {
+      "description": "user invitation in auth service",
+      "providerState": "list user invitations in auth service",
+      "request": {
+        "method": "POST",
+        "path": "/v1/invitation-list",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "page": 0,
+          "page_size": 25,
+          "order_by": "create_timestamp",
+          "order_type": "asc",
+          "filters": {
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 149,
+          "num_of_pages": 6,
+          "result": [
+            {
+              "id": "fc763eba-0905-41c5-a27f-3934ab26786c",
+              "invitation_code": "string",
+              "expiry_timestamp": "string",
+              "create_timestamp": "string",
+              "invited_by": "string",
+              "email": "string",
+              "platform_role": "string",
+              "project_role": "string",
+              "project_code": "string",
+              "status": "string"
+            }
+          ]
+        },
+        "matchingRules": {
+          "$.body.total": {
+            "match": "type"
+          },
+          "$.body.num_of_pages": {
+            "match": "type"
+          },
+          "$.body.result": {
+            "min": 1
+          },
+          "$.body.result[*].*": {
+            "match": "type"
+          },
+          "$.body.result[*].id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.result[*].invitation_code": {
+            "match": "type"
+          },
+          "$.body.result[*].expiry_timestamp": {
+            "match": "type"
+          },
+          "$.body.result[*].create_timestamp": {
+            "match": "type"
+          },
+          "$.body.result[*].invited_by": {
+            "match": "type"
+          },
+          "$.body.result[*].email": {
+            "match": "type"
+          },
+          "$.body.result[*].platform_role": {
+            "match": "type"
+          },
+          "$.body.result[*].project_role": {
+            "match": "type"
+          },
+          "$.body.result[*].project_code": {
+            "match": "type"
+          },
+          "$.body.result[*].status": {
+            "match": "type"
+          }
+        }
+      }
+    },
+    {
+      "description": "user invitation in auth service",
+      "providerState": "update invitation status in auth service",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/invitation/498783f5-4b18-45ba-b9c1-e6a7d578173d",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "status": "complete"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": "success"
+        }
+      }
+    },
+    {
+      "description": "user invitation in auth service",
+      "providerState": "check external invitation in auth service",
+      "request": {
+        "method": "GET",
+        "path": "/v1/invitations/external",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": {
+            "allow_external_registration": true
+          }
+        },
+        "matchingRules": {
+          "$.body.result.allow_external_registration": {
+            "match": "type"
+          }
+        }
+      }
+    },
+    {
+      "description": "user information in auth service",
+      "providerState": "update user status in auth service",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/user/account",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "operation_type": "enable",
+          "user_email": "contract_test@email.com",
+          "operator": "admin"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": "enable user contract_test@email.com"
+        },
+        "matchingRules": {
+          "$.body.result": {
+            "match": "type"
+          }
+        }
+      }
+    },
+    {
+      "description": "user information in auth service",
+      "providerState": "create user project role in auth service",
+      "request": {
+        "method": "POST",
+        "path": "/v1/user/project-role",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "email": "contract_test@email.com",
+          "project_role": "contrattestproject-admin",
+          "operator": "admin",
+          "project_code": "contrattestproject",
+          "invite_event": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": "success"
+        }
+      }
+    },
+    {
+      "description": "user information in auth service",
+      "providerState": "list users in auth service",
+      "request": {
+        "method": "GET",
+        "path": "/v1/users",
+        "query": "username=contracttestaccount&page=0&page_size=10&order_type=asc",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": [
+            {
+              "id": "fc763eba-0905-41c5-a27f-3934ab26786c",
+              "name": "string",
+              "username": "string",
+              "first_name": "string",
+              "last_name": "string",
+              "email": "string",
+              "time_created": "2022-09-28T16:28:05",
+              "last_login": "2023-01-20T20:59:44",
+              "status": "A string",
+              "role": "A string"
+            }
+          ]
+        },
+        "matchingRules": {
+          "$.body.result": {
+            "min": 1
+          },
+          "$.body.result[*].*": {
+            "match": "type"
+          },
+          "$.body.result[*].id": {
+            "match": "regex",
+            "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+          },
+          "$.body.result[*].name": {
+            "match": "type"
+          },
+          "$.body.result[*].username": {
+            "match": "type"
+          },
+          "$.body.result[*].first_name": {
+            "match": "type"
+          },
+          "$.body.result[*].last_name": {
+            "match": "type"
+          },
+          "$.body.result[*].email": {
+            "match": "type"
+          },
+          "$.body.result[*].time_created": {
+            "match": "type"
+          },
+          "$.body.result[*].last_login": {
+            "match": "type"
+          },
+          "$.body.result[*].status": {
+            "match": "type"
+          },
+          "$.body.result[*].role": {
+            "match": "type"
+          }
+        }
+      }
+    },
+    {
+      "description": "user information in auth service",
+      "providerState": "update user project role in auth service",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/user/project-role",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "email": "contract_test@email.com",
+          "project_role": "contrattestproject-contributor",
+          "operator": "admin",
+          "project_code": "contrattestproject"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": "success"
+        }
+      }
+    },
+    {
+      "description": "user information in auth service",
+      "providerState": "delete user project role in auth service",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/user/project-role",
+        "query": "email=contract_test%40email.com&project_role=contrattestproject-contributor&operator=admin&project_code=contrattestproject",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": "success"
+        }
+      }
+    },
+    {
+      "description": "user information in auth service",
+      "providerState": "add user to ldap group in auth service",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/user/group",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "operation_type": "add",
+          "group_code": "contrattestproject",
+          "user_email": "contract_test@email.com"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+        },
+        "body": {
+          "code": 200,
+          "error_msg": "",
+          "page": 0,
+          "total": 1,
+          "num_of_pages": 1,
+          "result": "add user contract_test@email.com from ad group"
+        },
+        "matchingRules": {
+          "$.body.result": {
+            "match": "type"
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "2.0.0"
+    }
+  }
+}
