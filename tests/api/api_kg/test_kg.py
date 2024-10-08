@@ -1,18 +1,16 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import re
 from uuid import uuid4
 
-import pytest
-
 from config import ConfigClass
 
 
-@pytest.mark.asyncio
-async def test_list_spaces_calls_kg_service(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
+async def test_list_spaces_calls_kg_service(test_async_client, httpx_mock):
     headers = {'Authorization': 'Bearer token'}
     expected_result = {'result': [{'name': 'hdc-myspace'}, {'name': 'myspace'}]}
     httpx_mock.add_response(
@@ -25,8 +23,7 @@ async def test_list_spaces_calls_kg_service(test_async_client, httpx_mock, jwt_t
     assert response.json() == expected_result
 
 
-@pytest.mark.asyncio
-async def test_get_space_by_id_calls_kg_service(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
+async def test_get_space_by_id_calls_kg_service(test_async_client, httpx_mock):
     space = 'myspace'
     expected_result = {
         'name': 'myspace',
@@ -47,8 +44,7 @@ async def test_get_space_by_id_calls_kg_service(test_async_client, httpx_mock, j
     assert response.json() == expected_result
 
 
-@pytest.mark.asyncio
-async def test_create_space_calls_kg_service(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
+async def test_create_space_calls_kg_service(test_async_client, httpx_mock):
     httpx_mock.add_response(method='POST', url=f'{ConfigClass.KG_SERVICE}/v1/spaces/create', json={}, status_code=201)
 
     response = await test_async_client.post('/v1/kg/spaces/create')
@@ -56,7 +52,6 @@ async def test_create_space_calls_kg_service(test_async_client, httpx_mock, jwt_
     assert response.status_code == 201
 
 
-@pytest.mark.asyncio
 async def test_create_space_for_project_calls_kg_service(
     test_async_client, httpx_mock, jwt_token_admin, has_permission_true
 ):
@@ -74,10 +69,7 @@ async def test_create_space_for_project_calls_kg_service(
     assert response.status_code == 201
 
 
-@pytest.mark.asyncio
-async def test_create_space_for_dataset_calls_kg_service(
-    test_async_client, httpx_mock, jwt_token_admin, has_permission_true
-):
+async def test_create_space_for_dataset_calls_kg_service(test_async_client, httpx_mock):
     headers = {'Authorization': 'Bearer token'}
     httpx_mock.add_response(
         method='POST',
@@ -92,8 +84,7 @@ async def test_create_space_for_dataset_calls_kg_service(
     assert response.status_code == 201
 
 
-@pytest.mark.asyncio
-async def test_list_metadata_calls_kg_service(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
+async def test_list_metadata_calls_kg_service(test_async_client, httpx_mock):
     expected_result = {
         'result': [
             {
@@ -127,8 +118,7 @@ async def test_list_metadata_calls_kg_service(test_async_client, httpx_mock, jwt
     assert response.json() == expected_result
 
 
-@pytest.mark.asyncio
-async def test_get_metadata_by_id_calls_kg_service(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
+async def test_get_metadata_by_id_calls_kg_service(test_async_client, httpx_mock):
     expected_result = {
         'creator': '0d3137ad-ff53-46dc-b68e-b781edc3e37b',
         'data': {'http://schema.org/name': 'Matvey', 'http://schema.org/surname': 'Loshakov'},
@@ -149,8 +139,7 @@ async def test_get_metadata_by_id_calls_kg_service(test_async_client, httpx_mock
     assert response.json() == expected_result
 
 
-@pytest.mark.asyncio
-async def test_upload_metadata_calls_kg_service(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
+async def test_upload_metadata_calls_kg_service(test_async_client, httpx_mock):
     expected_result = {
         'creator': '0d3137ad-ff53-46dc-b68e-b781edc3e37b',
         'data': {'http://schema.org/name': 'Matvey', 'http://schema.org/surname': 'Loshakov'},
@@ -180,8 +169,7 @@ async def test_upload_metadata_calls_kg_service(test_async_client, httpx_mock, j
     assert response.json() == expected_result
 
 
-@pytest.mark.asyncio
-async def test_update_metadata_calls_kg_service(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
+async def test_update_metadata_calls_kg_service(test_async_client, httpx_mock):
     metadata_id = str(uuid4())
     expected_result = {
         'creator': '0d3137ad-ff53-46dc-b68e-b781edc3e37b',
@@ -212,8 +200,7 @@ async def test_update_metadata_calls_kg_service(test_async_client, httpx_mock, j
     assert response.json() == expected_result
 
 
-@pytest.mark.asyncio
-async def test_list_users_calls_kg_service(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
+async def test_list_users_calls_kg_service(test_async_client, httpx_mock):
     expected_result = {
         'users': [
             {
@@ -243,7 +230,6 @@ async def test_list_users_calls_kg_service(test_async_client, httpx_mock, jwt_to
     assert response.json() == expected_result
 
 
-@pytest.mark.asyncio
 async def test_add_user_calls_kg_service(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
     project_id = str(uuid4())
     httpx_mock.add_response(
@@ -261,7 +247,6 @@ async def test_add_user_calls_kg_service(test_async_client, httpx_mock, jwt_toke
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_delete_user_calls_kg_service(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
     project_id = str(uuid4())
     httpx_mock.add_response(
@@ -279,7 +264,6 @@ async def test_delete_user_calls_kg_service(test_async_client, httpx_mock, jwt_t
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_update_user_calls_kg_service(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
     project_id = str(uuid4())
     httpx_mock.add_response(

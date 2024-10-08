@@ -1,12 +1,15 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 from json.decoder import JSONDecodeError
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Mapping
+from typing import Optional
 
 from fastapi import Depends
 from httpx import AsyncClient
@@ -44,6 +47,21 @@ class AuthServiceClient:
 
         return response
 
+    async def _post(
+        self, url: str, params: Mapping[str, Any], json: Dict[str, Any], headers: Optional[dict[str, Any]] = None
+    ) -> Response:
+        logger.info(f'Calling auth service {url} with query params: {params} and body: {json}')
+
+        try:
+            response = await self.client.post(url, params=params, json=json, headers=headers)
+            assert response.is_success
+        except AssertionError:
+            message = f'Unable to send data to kg integration service with url "{url}" and params "{params}".'
+            logger.exception(message)
+            raise AuthServiceException(message)
+
+        return response
+
     async def get_project_codes_where_user_has_role(self, username: str) -> List[str]:
         """Get list of project codes where the user has a role."""
 
@@ -72,6 +90,27 @@ class AuthServiceClient:
             logger.exception(message)
             raise APIException(error_msg=message, status_code=EAPIResponseCode.internal_error.value)
         return project_roles
+
+    async def find_vm_user(self, username: str) -> Response:
+        url = self.endpoint_v1 + '/vm/user'
+        params = {'username': username}
+        # we can get 404 here, so no default _get method
+        logger.info(f'Calling auth service url "{url}" with query params: {params}')
+        response = await self.client.get(url, params=params)
+
+        return response
+
+    async def create_vm_user(self, data: dict) -> Response:
+        url = self.endpoint_v1 + '/vm/user'
+        response = await self._post(url, json=data, params={})
+
+        return response
+
+    async def reset_password(self, data: dict) -> Response:
+        url = self.endpoint_v1 + '/vm/user/reset'
+        response = await self._post(url, json=data, params={})
+
+        return response
 
 
 def get_auth_service_client(settings: Settings = Depends(get_settings)) -> AuthServiceClient:

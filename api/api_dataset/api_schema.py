@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import requests
@@ -8,9 +9,11 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 from fastapi_utils import cbv
 
 from app.auth import jwt_required
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import APIResponse
@@ -22,7 +25,7 @@ router = APIRouter(tags=['Dataset Schema'])
 
 @cbv.cbv(router)
 class SchemaCreate:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.post(
         '/dataset/{dataset_id}/schema',
@@ -47,7 +50,7 @@ class SchemaCreate:
 
 @cbv.cbv(router)
 class Schema:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.put(
         '/dataset/{dataset_id}/schema/{schema_id}',
@@ -97,9 +100,7 @@ class Schema:
     )
     async def delete(self, dataset_id: str, schema_id: str, request: Request):
         api_response = APIResponse()
-        payload = await request.json()
-        payload['username'] = self.current_identity['username']
-        payload['dataset_geid'] = dataset_id
+        payload = {'username': self.current_identity['username'], 'dataset_geid': dataset_id, 'activity': []}
         try:
             response = requests.delete(
                 ConfigClass.DATASET_SERVICE + f'schema/{schema_id}',
@@ -111,12 +112,12 @@ class Schema:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {e}')
             return api_response.json_response()
-        return JSONResponse(content=response.json(), status_code=response.status_code)
+        return Response(status_code=response.status_code)
 
 
 @cbv.cbv(router)
 class SchemaList:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.post(
         '/dataset/{dataset_id}/schema/list',
@@ -126,7 +127,6 @@ class SchemaList:
     async def post(self, dataset_id: str, request: Request):
         api_response = APIResponse()
         payload = await request.json()
-        payload['creator'] = self.current_identity['username']
         payload['dataset_geid'] = dataset_id
         try:
             response = requests.post(

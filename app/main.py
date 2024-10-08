@@ -1,17 +1,19 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 from typing import Union
 
 from common import ProjectException
+from common import configure_logging
 from fastapi import FastAPI
 from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from opentelemetry import trace
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME
@@ -23,7 +25,6 @@ from app.api_registry import api_registry
 from app.components.exceptions import APIException
 from app.components.exceptions import ServiceException
 from app.components.exceptions import UnhandledException
-from app.components.logging import configure_logging
 from app.logger import logger
 from config import Settings
 from config import get_settings
@@ -115,11 +116,11 @@ def setup_tracing(app: FastAPI, settings: Settings) -> None:
     tracer_provider = TracerProvider(resource=Resource.create({SERVICE_NAME: settings.APP_NAME}))
     trace.set_tracer_provider(tracer_provider)
 
-    jaeger_exporter = JaegerExporter(
-        agent_host_name=settings.OPEN_TELEMETRY_HOST, agent_port=settings.OPEN_TELEMETRY_PORT
+    otlp_exporter = OTLPSpanExporter(
+        endpoint=f'{settings.OPEN_TELEMETRY_HOST}:{settings.OPEN_TELEMETRY_PORT}', insecure=True
     )
 
-    tracer_provider.add_span_processor(BatchSpanProcessor(jaeger_exporter))
+    tracer_provider.add_span_processor(BatchSpanProcessor(otlp_exporter))
 
     FastAPIInstrumentor.instrument_app(app)
     HTTPXClientInstrumentor().instrument()

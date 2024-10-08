@@ -1,17 +1,15 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
-import aioredis
 import pytest
-from aioredis import Redis
-from aioredis.exceptions import RedisError
+from redis.asyncio import Redis
+from redis.exceptions import RedisError
 
 from config import ConfigClass
 from services.bridge import get_bridge_service
-
-pytestmark = pytest.mark.asyncio
 
 
 @pytest.mark.parametrize(
@@ -72,6 +70,11 @@ async def test_add_visits_returns_400_when_entity_does_not_exist(entity, url, mo
 
 async def test_add_visits_redis_error_returns_400(mocker, test_async_client, httpx_mock):
     mocker.patch('app.auth.get_current_identity', return_value={'username': 'admin'})
+    httpx_mock.add_response(
+        method='GET',
+        url=f'{ConfigClass.PROJECT_SERVICE}/v1/projects/any',
+        json={'code': 'any'},
+    )
     mocked_redis = mocker.patch.object(Redis, 'exists')
     mocked_redis.side_effect = RedisError()
     params = {'entity': 'project', 'code': 'any'}
@@ -124,7 +127,7 @@ async def test_get_visits_with_returns_200(
 ):
     bridge_service = await get_bridge_service()
     username = 'admin'
-    redis_cli = await aioredis.from_url(ConfigClass.REDIS_URL, decode_responses=True)
+    redis_cli = await Redis.from_url(ConfigClass.REDIS_URL, decode_responses=True)
     for i in range(0, 3):
         await redis_cli.lpush(f'{entity}:{username}:visits', f'code_{i}')
 

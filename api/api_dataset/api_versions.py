@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import requests
@@ -12,6 +13,7 @@ from fastapi_utils import cbv
 from httpx import AsyncClient
 
 from app.auth import jwt_required
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import APIResponse
@@ -23,7 +25,7 @@ router = APIRouter(tags=['Dataset Version'])
 
 @cbv.cbv(router)
 class Publish:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.post(
         '/dataset/{dataset_id}/publish',
@@ -51,7 +53,7 @@ class Publish:
 
 @cbv.cbv(router)
 class PublishStatus:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get(
         '/dataset/{dataset_id}/publish/status',
@@ -76,7 +78,7 @@ class PublishStatus:
 
 @cbv.cbv(router)
 class DownloadPre:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get(
         '/dataset/{dataset_id}/download/pre',
@@ -102,7 +104,7 @@ class DownloadPre:
 
 @cbv.cbv(router)
 class DatasetVersions:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get(
         '/dataset/{dataset_id}/versions',

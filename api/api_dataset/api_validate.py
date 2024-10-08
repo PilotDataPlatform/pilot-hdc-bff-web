@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import requests
@@ -11,11 +12,13 @@ from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 
 from app.auth import jwt_required
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import APIResponse
 from models.api_response import EAPIResponseCode
-from services.dataset import get_dataset_by_code
+from services.dataset.client import DatasetServiceClient
+from services.dataset.client import get_dataset_service_client
 from services.permissions_service.decorators import DatasetPermission
 
 router = APIRouter(tags=['Dataset Validate'])
@@ -23,7 +26,8 @@ router = APIRouter(tags=['Dataset Validate'])
 
 @cbv.cbv(router)
 class BIDSValidator:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    dataset_service_client: DatasetServiceClient = Depends(get_dataset_service_client)
 
     @router.post(
         '/dataset/bids-validate',
@@ -42,7 +46,7 @@ class BIDSValidator:
         logger.info(f'Call API for validating dataset: {dataset_code}')
 
         try:
-            dataset_node = await get_dataset_by_code(dataset_code)
+            dataset_node = await self.dataset_service_client.get_dataset_by_code(dataset_code)
             if dataset_node['type'] != 'BIDS':
                 _res.set_code(EAPIResponseCode.bad_request)
                 _res.set_result('Dataset is not BIDS type')
@@ -67,7 +71,7 @@ class BIDSValidator:
 
 @cbv.cbv(router)
 class BIDSResult:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get(
         '/dataset/bids-validate/{dataset_code}',

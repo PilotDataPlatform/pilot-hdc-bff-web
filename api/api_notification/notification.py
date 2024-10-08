@@ -1,16 +1,15 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
-
-from typing import Any
-from typing import Dict
 
 from fastapi import APIRouter
 from fastapi import Depends
 
 from api.api_notification.parameters import NotificationFilterParameters
 from app.auth import jwt_required
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from models.api_response import APIResponse
 from models.api_response import EAPIResponseCode
@@ -25,7 +24,7 @@ router = APIRouter(tags=['Notifications'])
 @router.get('/user-notifications', summary='List notifications for the current user')
 async def get_current_user_notifications(
     filter_parameters: NotificationFilterParameters = Depends(),
-    current_identity: Dict[str, Any] = Depends(jwt_required),
+    current_identity: CurrentUser = Depends(jwt_required),
     auth_service_client: AuthServiceClient = Depends(get_auth_service_client),
     notification_service_client: NotificationServiceClient = Depends(get_notification_service_client),
 ):

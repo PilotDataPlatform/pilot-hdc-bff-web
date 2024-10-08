@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import httpx
@@ -10,6 +11,7 @@ from fastapi import Request
 from fastapi_utils import cbv
 
 from app.auth import jwt_required
+from app.components.user.models import CurrentUser
 from config import ConfigClass
 from models.api_response import APIResponse
 from models.api_response import EAPIResponseCode
@@ -21,7 +23,7 @@ router = APIRouter(tags=['Workbench'])
 
 @cbv.cbv(router)
 class WorkbenchRestful:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get(
         '/{project_id}/workbench',
@@ -133,7 +135,7 @@ class WorkbenchRestful:
             try:
                 async with httpx.AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
                     url = f'{ConfigClass.WORKSPACE_SERVICE}guacamole/project/users'
-                    response = await client.post(url, data=payload)
+                    response = await client.post(url, json=payload)
                     response.raise_for_status()
                     result = response.json()
 

@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import re
@@ -42,7 +43,6 @@ def get_file_entity(requests_mocker):
     )
 
 
-@pytest.mark.asyncio
 async def test_proxy_pre_upload_successful(
     test_async_client, requests_mocker, httpx_mock, jwt_token_admin, get_file_entity, has_permission_true
 ):
@@ -64,7 +64,6 @@ async def test_proxy_pre_upload_successful(
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_proxy_pre_upload_fail_with_tag(
     test_async_client, requests_mocker, httpx_mock, jwt_token_admin, get_file_entity
 ):
@@ -96,7 +95,6 @@ async def test_proxy_pre_upload_fail_with_tag(
     assert response.status_code == 403
 
 
-@pytest.mark.asyncio
 async def test_proxy_pre_upload_successfulwith_tag(
     test_async_client, requests_mocker, httpx_mock, jwt_token_admin, get_file_entity, has_permission_true
 ):
@@ -119,7 +117,6 @@ async def test_proxy_pre_upload_successfulwith_tag(
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_proxy_pre_upload_409(
     test_async_client, requests_mocker, httpx_mock, jwt_token_admin, get_file_entity, has_permission_true
 ):
@@ -145,7 +142,6 @@ async def test_proxy_pre_upload_409(
     assert response.json().get('error_msg') == 'error when pre upload'
 
 
-@pytest.mark.asyncio
 async def test_proxy_chunk_presigned_successful(test_async_client, requests_mocker, httpx_mock, jwt_token_admin):
     project_code = 'test_project'
     key = 'filepath'
@@ -171,7 +167,6 @@ async def test_proxy_chunk_presigned_successful(test_async_client, requests_mock
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_proxy_get_resumable_successful(
     test_async_client, requests_mocker, httpx_mock, jwt_token_admin, get_file_entity, has_permission_true
 ):
@@ -197,7 +192,6 @@ async def test_proxy_get_resumable_successful(
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_proxy_get_resumable_fail(
     test_async_client, requests_mocker, httpx_mock, jwt_token_admin, get_file_entity, has_permission_true
 ):
@@ -217,7 +211,6 @@ async def test_proxy_get_resumable_fail(
     assert response.status_code == 500
 
 
-@pytest.mark.asyncio
 async def test_proxy_list_resumable_successful(test_async_client, requests_mocker, httpx_mock, jwt_token_admin):
     project_code = 'test_project'
 

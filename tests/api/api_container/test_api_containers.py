@@ -1,16 +1,14 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 from uuid import uuid4
 
-import pytest
-
 from config import ConfigClass
 
 
-@pytest.mark.asyncio
 async def test_project_update_uploads_logo_if_it_present_in_the_payload(
     mocker, test_async_client, httpx_mock, jwt_token_admin, has_permission_true
 ):
@@ -40,7 +38,6 @@ async def test_project_update_uploads_logo_if_it_present_in_the_payload(
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_get_user_role_stats_of_project(
     mocker, test_async_client, httpx_mock, jwt_token_contrib, has_permission_true
 ):

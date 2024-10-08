@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 from typing import Any
@@ -66,10 +67,10 @@ async def get_space(
 )
 async def create_space(
     request: Request, kg_service_client: KGServiceClient = Depends(get_kg_service_client)
-) -> JSONResponse:
+) -> Response:
     """Create new KG space with any given name."""
     response = await kg_service_client.create_new_space(params=MultiDict(request.query_params))
-    return JSONResponse(content=response.json(), status_code=response.status_code)
+    return Response(status_code=response.status_code)
 
 
 @router.post(
@@ -79,13 +80,13 @@ async def create_space(
 )
 async def create_space_for_project(
     request: Request, project_code: str, kg_service_client: KGServiceClient = Depends(get_kg_service_client)
-) -> JSONResponse:
+) -> Response:
     """Create new KG space for project with project code as a name."""
     headers = {'Authorization': request.headers.get('Authorization')}
     response = await kg_service_client.create_new_space_for_project(
         project_code=project_code, params=MultiDict(request.query_params), headers=headers
     )
-    return JSONResponse(content=response.json(), status_code=response.status_code)
+    return Response(status_code=response.status_code)
 
 
 @router.post(
@@ -95,13 +96,13 @@ async def create_space_for_project(
 )
 async def create_space_for_dataset(
     request: Request, dataset_code: str, kg_service_client: KGServiceClient = Depends(get_kg_service_client)
-) -> JSONResponse:
+) -> Response:
     """Create new KG space for dataset with dataset code as a name."""
     headers = {'Authorization': request.headers.get('Authorization')}
     response = await kg_service_client.create_new_space_for_dataset(
         dataset_code=dataset_code, params=MultiDict(request.query_params), headers=headers
     )
-    return JSONResponse(content=response.json(), status_code=response.status_code)
+    return Response(status_code=response.status_code)
 
 
 @router.get(
@@ -159,6 +160,39 @@ async def upload_metadata(
     return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
+@router.get(
+    '/kg/metadata/upload/{kg_instance_id}/{dataset_id}',
+    summary='Upload new metadata to dataset from KG',
+)
+async def upload_metadata_from_kg(
+    request: Request,
+    kg_instance_id: str,
+    dataset_id: str,
+    kg_service_client: KGServiceClient = Depends(get_kg_service_client),
+) -> JSONResponse:
+    headers = {'Authorization': request.headers.get('Authorization')}
+    response = await kg_service_client.upload_metadata_from_kg(
+        kg_instance_id=kg_instance_id, dataset_id=dataset_id, params=MultiDict(request.query_params), headers=headers
+    )
+    return JSONResponse(content=response.json(), status_code=response.status_code)
+
+
+@router.get(
+    '/kg/metadata/refresh/{metadata_id}',
+    summary='Refresh metadata from KG',
+)
+async def refresh_metadata_from_kg(
+    request: Request,
+    metadata_id: str,
+    kg_service_client: KGServiceClient = Depends(get_kg_service_client),
+) -> JSONResponse:
+    headers = {'Authorization': request.headers.get('Authorization')}
+    response = await kg_service_client.refresh_metadata_from_kg(
+        metadata_id=metadata_id, params=MultiDict(request.query_params), headers=headers
+    )
+    return JSONResponse(content=response.json(), status_code=response.status_code)
+
+
 @router.put(
     '/kg/metadata/update/{metadata_id}',
     summary='Update existing metadata on KG',
@@ -175,6 +209,23 @@ async def update_metadata(
         metadata_id=metadata_id, json=body, params=MultiDict(request.query_params), headers=headers
     )
     return JSONResponse(content=response.json(), status_code=response.status_code)
+
+
+@router.delete(
+    '/kg/metadata/delete/{metadata_id}',
+    summary='Delete existing metadata in KG',
+)
+async def delete_metadata(
+    request: Request,
+    metadata_id: str,
+    kg_service_client: KGServiceClient = Depends(get_kg_service_client),
+) -> Response:
+    """Delete existing metadata in KG."""
+    headers = {'Authorization': request.headers.get('Authorization')}
+    response = await kg_service_client.delete_metadata(
+        metadata_id=metadata_id, params=MultiDict(request.query_params), headers=headers
+    )
+    return Response(status_code=response.status_code)
 
 
 @router.get(

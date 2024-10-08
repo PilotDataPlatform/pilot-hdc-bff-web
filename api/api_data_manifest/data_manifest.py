@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import httpx
@@ -14,6 +15,7 @@ from fastapi_utils import cbv
 
 from app.auth import jwt_required
 from app.components.exceptions import APIException
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import APIResponse
@@ -27,7 +29,7 @@ router = APIRouter(tags=['Attribute Templates'])
 
 @cbv.cbv(router)
 class RestfulManifests:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get(
         '/data/manifests',
@@ -67,7 +69,7 @@ class RestfulManifests:
 
 @cbv.cbv(router)
 class RestfulManifest:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get(
         '/data/manifest/{manifest_id}',
@@ -212,7 +214,7 @@ class RestfulManifest:
 
 @cbv.cbv(router)
 class FileAttributes:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
     """Update attributes of template attached to a file."""
 
     @router.put(
@@ -264,7 +266,7 @@ class FileAttributes:
 
 @cbv.cbv(router)
 class ImportManifest:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
     """Import attribute template from portal as JSON."""
 
     @router.post(
@@ -294,7 +296,7 @@ class ImportManifest:
 class FileManifestQuery:
     """List template attributes for files."""
 
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.post(
         '/file/manifest/query',
@@ -361,7 +363,7 @@ class FileManifestQuery:
 class AttachAttributes:
     """Attach attributes to files or folders (bequeath)"""
 
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.post(
         '/file/attributes/attach',

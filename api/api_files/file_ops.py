@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import httpx
@@ -14,6 +15,7 @@ from fastapi_utils import cbv
 
 from app.auth import jwt_required
 from app.components.exceptions import APIException
+from app.components.user.models import CurrentUser
 from config import ConfigClass
 from models.api_response import EAPIResponseCode
 from services.meta import get_entity_by_id
@@ -24,7 +26,7 @@ router = APIRouter(tags=['File Ops'])
 
 @cbv.cbv(router)
 class FileActionTasks:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get(
         '/files/actions/tasks',
@@ -51,7 +53,7 @@ class FileActionTasks:
 
 @cbv.cbv(router)
 class FileActions:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.post(
         '/files/actions',

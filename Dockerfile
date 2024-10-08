@@ -1,5 +1,4 @@
-FROM python:3.9-buster
-
+FROM docker-registry.ebrains.eu/hdc-services-image/base-image:python-3.10.14-v1 AS bff-image
 
 ENV PYTHONDONTWRITEBYTECODE=true \
     PYTHONIOENCODING=UTF-8 \
@@ -9,26 +8,30 @@ ENV PYTHONDONTWRITEBYTECODE=true \
 
 ENV PATH="${POETRY_HOME}/bin:${PATH}"
 
-RUN groupadd --gid 1004 deploy \
-    && useradd --home-dir /home/deploy --create-home --uid 1004 \
-        --gid 1004 --shell /bin/sh --skel /dev/null deploy
-WORKDIR /home/deploy
-RUN wget https://dl.min.io/client/mc/release/linux-amd64/mc -P /usr/local/bin
+RUN curl -o /usr/local/bin/mc https://dl.min.io/client/mc/release/linux-amd64/mc
 
 RUN chmod +x /usr/local/bin/mc
 
-RUN apt-get update && apt-get install libsasl2-dev python-dev libldap2-dev libssl-dev -y && rm -rf /var/lib/apt/lists/*
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
 COPY poetry.lock pyproject.toml ./
 RUN poetry install --no-dev --no-root --no-interaction
 
-USER root
-COPY .  ./
-RUN chown -R deploy:deploy /home/deploy
+COPY api ./api
+COPY app ./app
+COPY config.py .
+COPY COPYRIGHT .
+COPY models ./models
+COPY poetry.lock .
+COPY pyproject.toml .
+COPY README.md .
+COPY resources ./resources
+COPY services ./services
 
-USER deploy
-ENV PATH="/home/deploy/.local/bin:${PATH}"
+RUN chown -R app:app /app
+USER app
+
+ENV PATH="/app/.local/bin:${PATH}"
 ENV MINIO_USERNAME=minioadmin
 ENV MINIO_PASSWORD=minioadmin
 ENV MINIO_URL=http://minio.minio:9000

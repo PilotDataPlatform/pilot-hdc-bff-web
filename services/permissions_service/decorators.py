@@ -1,12 +1,12 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 from http import HTTPStatus
 from typing import Optional
 
-from common import ProjectClient
 from common import has_permission
 from fastapi import Depends
 from fastapi import HTTPException
@@ -17,16 +17,17 @@ from app.components.exceptions import APIException
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import EAPIResponseCode
-from services.dataset import get_dataset_by_code
-from services.dataset import get_dataset_by_id
+from services.dataset.client import DatasetServiceClient
+from services.dataset.client import get_dataset_service_client
 from services.permissions_service.utils import get_project_code_from_request
+from services.project.client import ProjectServiceClient
 from services.project.client import get_project_service_client
 
 
 async def find_project_code(
     project_code: Optional[str] = None,
     project_id: Optional[str] = None,
-    project_service_client: ProjectClient = Depends(get_project_service_client),
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client),
 ) -> Optional[str]:
     """Find project code through a FastAPI dependency."""
 
@@ -70,7 +71,12 @@ class PermissionsCheck:
 
 
 class DatasetPermission:
-    async def __call__(self, request: Request):
+    async def __call__(
+        self,
+        request: Request,
+        dataset_service_client: DatasetServiceClient = Depends(get_dataset_service_client),
+        project_service_client: ProjectServiceClient = Depends(get_project_service_client),
+    ) -> bool:
         try:
             data = await request.json()
             dataset_code = request.path_params.get('dataset_code') or data.get('dataset_code')
@@ -78,11 +84,11 @@ class DatasetPermission:
             if not dataset_id:
                 dataset_id = data.get('dataset_id') or data.get('dataset_geid') or data.get('dataset_id_or_code')
             if dataset_code:
-                dataset = await get_dataset_by_code(dataset_code)
+                dataset = await dataset_service_client.get_dataset_by_code(dataset_code)
             else:
-                dataset = await get_dataset_by_id(dataset_id)
+                dataset = await dataset_service_client.get_dataset_by_id(dataset_id)
             current_identity = await get_current_identity(request)
-            if dataset['creator'] != current_identity['username']:
+            if not await current_identity.can_access_dataset(dataset, project_service_client):
                 raise APIException(error_msg='Permission denied', status_code=EAPIResponseCode.forbidden.value)
             return True
         except Exception:

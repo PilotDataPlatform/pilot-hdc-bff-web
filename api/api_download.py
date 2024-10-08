@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import requests
@@ -12,19 +13,25 @@ from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 
 from app.auth import jwt_required
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import APIResponse
 from models.api_response import EAPIResponseCode
-from services.dataset import get_dataset_by_code
+from services.dataset.client import DatasetServiceClient
+from services.dataset.client import get_dataset_service_client
 from services.meta import get_entity_by_id
+from services.project.client import ProjectServiceClient
+from services.project.client import get_project_service_client
 
 router = APIRouter(tags=['Download'])
 
 
 @cbv.cbv(router)
 class Download:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    dataset_service_client: DatasetServiceClient = Depends(get_dataset_service_client)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.post(
         '/download/pre',
@@ -35,7 +42,7 @@ class Download:
         payload = await request.json()
         zone = 'core'
         if payload.get('container_type') == 'dataset':
-            dataset_node = await get_dataset_by_code(payload.get('container_code'))
+            dataset_node = await self.dataset_service_client.get_dataset_by_code(payload.get('container_code'))
 
             for file in payload.get('files'):
                 entity_node = get_entity_by_id(file['id'])
@@ -49,7 +56,7 @@ class Download:
                 api_response.set_result("File doesn't belong to dataset, Permission denied")
                 return api_response.json_response()
 
-            if dataset_node['creator'] != self.current_identity['username']:
+            if not await self.current_identity.can_access_dataset(dataset_node, self.project_service_client):
                 api_response.set_code(EAPIResponseCode.forbidden)
                 api_response.set_result('Permission denied')
                 return api_response.json_response()
@@ -93,7 +100,9 @@ class Download:
 
 @cbv.cbv(router)
 class DatasetDownload:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    dataset_service_client: DatasetServiceClient = Depends(get_dataset_service_client)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.post(
         '/dataset/download/pre',
@@ -110,8 +119,8 @@ class DatasetDownload:
 
         logger.error('test here for the proxy')
 
-        dataset_node = await get_dataset_by_code(payload.get('dataset_code'))
-        if dataset_node['creator'] != self.current_identity['username']:
+        dataset_node = await self.dataset_service_client.get_dataset_by_code(payload.get('dataset_code'))
+        if not await self.current_identity.can_access_dataset(dataset_node, self.project_service_client):
             api_response.set_code(EAPIResponseCode.forbidden)
             api_response.set_result('Permission denied')
             return api_response.json_response()

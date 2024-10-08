@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import httpx
@@ -13,6 +14,7 @@ from fastapi_utils.cbv import cbv
 
 from app.auth import jwt_required
 from app.components.exceptions import APIException
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import APIResponse
@@ -29,7 +31,7 @@ _API_NAMESPACE = 'api_upload'
 
 @cbv(router)
 class APIProject:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.post(
         '/project/{project_code}/files',
@@ -234,7 +236,9 @@ class APIProject:
                     'zone': 0,
                     'recursive': True,
                     'status': ItemStatus.REGISTERED,
-                    'page_size': 100,
+                    'page_size': 1000,
+                    'sorting': 'last_updated_time',
+                    'order': 'desc',
                 }
                 headers = {'Authorization': request.headers.get('Authorization')}
                 res = await client.get(url, params=params, headers=headers, timeout=None)

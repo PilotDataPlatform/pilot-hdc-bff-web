@@ -1,11 +1,11 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import httpx
 import requests
-from common import ProjectClient
 from common import get_project_role
 from common import has_permission
 from fastapi import APIRouter
@@ -17,19 +17,22 @@ from httpx import AsyncClient
 
 from app.auth import jwt_required
 from app.components.exceptions import APIException
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_invitation import RegisterPOST
 from models.api_response import APIResponse
 from models.api_response import EAPIResponseCode
 from services.notifier_services.email_service import SrvEmail
+from services.project.client import ProjectServiceClient
+from services.project.client import get_project_service_client
 
 router = APIRouter(tags=['Invitations'])
 
 
 @cbv.cbv(router)
 class InvitationsRestful:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.post(
         '/invitations',
@@ -64,7 +67,7 @@ class InvitationsRestful:
 
 @cbv.cbv(router)
 class CheckUserPlatformRole:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get(
         '/invitation/check/{email}',
@@ -165,7 +168,7 @@ class Register:
 
         async with httpx.AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
             invite_response = await client.put(
-                ConfigClass.AUTH_SERVICE + f'invitation/{invite_id}', json={'status': 'pending'}
+                ConfigClass.AUTH_SERVICE + f'invitation/{invite_id}', json={'status': 'sent'}
             )
         if invite_response.status_code != 200:
             error_msg = f'Error Updating invite status: {invite_response.json()}'
@@ -177,7 +180,8 @@ class Register:
 
 @cbv.cbv(router)
 class PendingUserRestful:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.post(
         '/invitation-list',
@@ -194,8 +198,7 @@ class PendingUserRestful:
         project_code = filters.get('project_code', None)
 
         if self.current_identity['role'] != 'admin':
-            project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-            project = await project_client.get(code=project_code)
+            project = await self.project_service_client.get(code=project_code)
             if not await has_permission(
                 ConfigClass.AUTH_SERVICE, project.code, 'invitation', '*', 'manage', self.current_identity
             ):
@@ -217,7 +220,7 @@ class PendingUserRestful:
 
 @cbv.cbv(router)
 class ExternalRegistration:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get('/invitations/external', summary='check if external registration is enabled')
     async def get(self, request: Request):

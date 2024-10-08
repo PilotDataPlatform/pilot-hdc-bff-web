@@ -1,13 +1,13 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import math
 from datetime import datetime
 
 import httpx
-from common import ProjectClient
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Request
@@ -16,6 +16,7 @@ from fastapi_utils import cbv
 from httpx import AsyncClient
 
 from app.auth import jwt_required
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import APIResponse
@@ -23,13 +24,15 @@ from models.api_response import EAPIResponseCode
 from services.auth.client import AuthServiceClient
 from services.auth.client import get_auth_service_client
 from services.permissions_service.decorators import PermissionsCheck
+from services.project.client import ProjectServiceClient
+from services.project.client import get_project_service_client
 
 router = APIRouter(tags=['User Operations'])
 
 
 @cbv.cbv(router)
 class Users:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get(
         '/users/platform',
@@ -66,7 +69,8 @@ class Users:
 
 @cbv.cbv(router)
 class ContainerAdmins:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.get(
         '/containers/{project_id}/admins',
@@ -75,8 +79,7 @@ class ContainerAdmins:
     )
     async def get(self, project_id: str):
         """This method allow user to fetch all admins under a specific project with permissions."""
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = await project_client.get(project_id)
+        project = await self.project_service_client.get(project_id)
 
         payload = {
             'role_names': [f'{project.code}-admin'],
@@ -89,8 +92,9 @@ class ContainerAdmins:
 
 @cbv.cbv(router)
 class ContainerUsers:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
     auth_client: AuthServiceClient = Depends(get_auth_service_client)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.get(
         '/containers/{project_id}/users',
@@ -101,8 +105,7 @@ class ContainerUsers:
         """This method allow user to fetch all users under a specific dataset with permissions."""
         data = request.query_params
         logger.info(f'Calling API for fetching all users under dataset {project_id}')
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = await project_client.get(id=project_id)
+        project = await self.project_service_client.get(id=project_id)
 
         project_roles = await self.auth_client.get_project_roles(project.code)
 
@@ -123,7 +126,8 @@ class ContainerUsers:
 
 @cbv.cbv(router)
 class ContainerUsersStats:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.get(
         '/containers/{project_id}/roles/users/stats',
@@ -135,8 +139,7 @@ class ContainerUsersStats:
         api_response = APIResponse()
         try:
             logger.info(f'Calling API for fetching user realm role stats under project_id: {project_id}')
-            project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-            project = await project_client.get(id=project_id)
+            project = await self.project_service_client.get(id=project_id)
             project_code = project.code
             logger.info(f'Fetched project code from project service: {project_code}')
 
@@ -159,7 +162,8 @@ class ContainerUsersStats:
 
 @cbv.cbv(router)
 class UserContainerQuery:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.post(
         '/users/{username}/containers',
@@ -233,8 +237,7 @@ class UserContainerQuery:
                 }
                 return results
 
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project_result = await project_client.search(**payload)
+        project_result = await self.project_service_client.search(**payload)
         projects = [await i.json() for i in project_result['result']]
 
         if not is_platform_admin:

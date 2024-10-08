@@ -1,26 +1,29 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
-from common import ProjectClient
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Request
 from fastapi_utils import cbv
 
 from app.auth import jwt_required
+from app.components.user.models import CurrentUser
 from app.logger import logger
-from config import ConfigClass
 from models.api_response import APIResponse
 from services.permissions_service.decorators import PermissionsCheck
+from services.project.client import ProjectServiceClient
+from services.project.client import get_project_service_client
 
 router = APIRouter(tags=['Containers'])
 
 
 @cbv.cbv(router)
 class Containers:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.get(
         '/containers/',
@@ -63,9 +66,7 @@ class Containers:
             payload['created_at_start'] = request.query_params.get('create_time_start')
             payload['created_at_end'] = request.query_params.get('create_time_end')
 
-        result = {}
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        result = await project_client.search(**payload)
+        result = await self.project_service_client.search(**payload)
         api_response.set_result([await i.json() for i in result['result']])
         api_response.set_total(result['total'])
         api_response.set_num_of_pages(result['num_of_pages'])
@@ -74,7 +75,8 @@ class Containers:
 
 @cbv.cbv(router)
 class Container:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.put(
         '/containers/{project_id}',
@@ -86,8 +88,7 @@ class Container:
         logger.info('Calling Container put')
         api_response = APIResponse()
         update_data = await request.json()
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = await project_client.get(id=project_id)
+        project = await self.project_service_client.get(id=project_id)
 
         if 'icon' in update_data:
             logo = update_data['icon']

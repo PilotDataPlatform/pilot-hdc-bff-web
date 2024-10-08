@@ -1,11 +1,10 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 from uuid import uuid4
-
-import pytest
 
 from config import ConfigClass
 
@@ -19,7 +18,6 @@ PROJECT_DATA = {
 }
 
 
-@pytest.mark.asyncio
 async def test_create_project_successful(
     test_async_client, requests_mocker, httpx_mock, jwt_token_admin, has_permission_true
 ):

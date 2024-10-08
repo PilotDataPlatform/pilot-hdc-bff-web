@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import itertools
@@ -8,15 +9,15 @@ from typing import Any
 from typing import Dict
 from typing import List
 
-import aioredis
-from aioredis.exceptions import RedisError
-from common import ProjectClient
 from common.project.project_exceptions import ProjectNotFoundException
+from redis.asyncio import Redis
+from redis.exceptions import RedisError
 
 from app.components.exceptions import APIException
 from app.logger import logger
 from config import ConfigClass
-from services.dataset import get_dataset_by_code
+from services.dataset.client import get_dataset_service_client
+from services.project.client import get_project_service_client
 
 
 class BridgeService:
@@ -32,16 +33,17 @@ class BridgeService:
 
     async def _is_entity_exists(self, entity: str, code: str) -> bool:
         if entity == 'project':
-            project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-            await project_client.get(code=code)
+            project_service_client = get_project_service_client(settings=ConfigClass)
+            await project_service_client.get(code=code)
         else:
-            await get_dataset_by_code(code)
+            dataset_service_client = get_dataset_service_client(settings=ConfigClass)
+            await dataset_service_client.get_dataset_by_code(code)
         return True
 
-    async def connect_redis(self) -> aioredis.Redis:
+    async def connect_redis(self) -> Redis:
         if not self.REDIS:
             logger.info('connection to redis')
-            self.REDIS = await aioredis.from_url(ConfigClass.REDIS_URL, decode_responses=True)
+            self.REDIS = await Redis.from_url(ConfigClass.REDIS_URL, decode_responses=True)
         return self.REDIS
 
     async def add_visit(self, entity: str, code: str, username: str) -> bool:

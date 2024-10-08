@@ -1,11 +1,10 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 from uuid import uuid4
-
-import pytest
 
 from config import ConfigClass
 
@@ -32,6 +31,16 @@ USER = {
     'email': 'test@test.com',
     'name': 'test',
     'username': 'test',
+    'first_name': 'test',
+    'last_name': 'test',
+}
+
+VM_USER = {
+    'email': 'test@test.com',
+    'username': 'test',
+    'first_name': 'test',
+    'last_name': 'test',
+    'project_code': 'testproject',
 }
 
 
@@ -77,7 +86,6 @@ def test_delete_request_400(test_client, httpx_mock, jwt_token_admin, has_permis
     assert response.status_code == 400
 
 
-@pytest.mark.asyncio
 async def test_put_request_complete_200(
     test_async_client, requests_mocker, httpx_mock, jwt_token_admin, has_permission_true
 ):
@@ -104,6 +112,13 @@ async def test_put_request_complete_200(
     )
 
     httpx_mock.add_response(
+        method='PUT',
+        url=ConfigClass.AUTH_SERVICE + 'vm/user',
+        json=VM_USER,
+        status_code=200,
+    )
+
+    httpx_mock.add_response(
         method='GET',
         url=ConfigClass.AUTH_SERVICE + f'admin/user?user_id={user_id}&exact=true',
         json={'result': USER},
@@ -118,12 +133,18 @@ async def test_put_request_complete_200(
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_put_request_complete_500(
     test_async_client, requests_mocker, httpx_mock, jwt_token_admin, has_permission_true
 ):
     request_id = RESOURCE_REQUEST['id']
     user_id = RESOURCE_REQUEST['user_id']
+    project_id = RESOURCE_REQUEST['project_id']
+
+    httpx_mock.add_response(
+        method='GET',
+        url=f'{ConfigClass.PROJECT_SERVICE}/v1/projects/{project_id}',
+        json={'code': PROJECT['code'], 'name': PROJECT['name']},
+    )
 
     httpx_mock.add_response(
         method='GET',
@@ -150,7 +171,6 @@ async def test_put_request_complete_500(
     assert response.status_code == 500
 
 
-@pytest.mark.asyncio
 async def test_post_request_query_200(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
 
     result = {'num_of_pages': 1, 'page': 0, 'total': 1, 'result': [RESOURCE_REQUEST]}
@@ -167,7 +187,6 @@ async def test_post_request_query_200(test_async_client, httpx_mock, jwt_token_a
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_post_request_query_filter_200(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
 
     result = {'num_of_pages': 1, 'page': 0, 'total': 1, 'result': [RESOURCE_REQUEST]}
@@ -187,7 +206,6 @@ async def test_post_request_query_filter_200(test_async_client, httpx_mock, jwt_
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_post_request_query_422(test_async_client, httpx_mock, jwt_token_admin, has_permission_true):
 
     result = {'num_of_pages': 1, 'page': 0, 'total': 1, 'result': [RESOURCE_REQUEST]}
@@ -204,7 +222,6 @@ async def test_post_request_query_422(test_async_client, httpx_mock, jwt_token_a
     assert response.status_code == 422
 
 
-@pytest.mark.asyncio
 async def test_post_request_query_contrib_200(test_async_client, httpx_mock, jwt_token_contrib):
     payload = {
         'page': 0,
@@ -215,13 +232,22 @@ async def test_post_request_query_contrib_200(test_async_client, httpx_mock, jwt
     assert response.status_code == 403
 
 
-@pytest.mark.asyncio
 async def test_post_request_create_200(test_async_client, httpx_mock, jwt_token_contrib, has_permission_true):
 
     project_id = RESOURCE_REQUEST['project_id']
 
-    url = ConfigClass.PROJECT_SERVICE + '/v1/resource-requests/'
-    httpx_mock.add_response(method='POST', url=url, json=RESOURCE_REQUEST, status_code=200)
+    httpx_mock.add_response(
+        method='GET',
+        url=f'{ConfigClass.PROJECT_SERVICE}/v1/projects/{project_id}',
+        json={'code': PROJECT['code'], 'name': PROJECT['name']},
+    )
+
+    httpx_mock.add_response(
+        method='POST',
+        url=f'{ConfigClass.PROJECT_SERVICE}/v1/resource-requests/',
+        json=RESOURCE_REQUEST,
+        status_code=200,
+    )
 
     httpx_mock.add_response(
         method='GET',
@@ -234,6 +260,20 @@ async def test_post_request_create_200(test_async_client, httpx_mock, jwt_token_
         method='POST', url=ConfigClass.NOTIFY_SERVICE + '/v1/email/', json={'result': 'success'}, status_code=200
     )
 
+    httpx_mock.add_response(
+        method='GET',
+        url=ConfigClass.PROJECT_SERVICE + f'/v1/workbenches/?project_code={PROJECT["code"]}',
+        json={'result': [{'resource': 'guacamole'}]},
+        status_code=200,
+    )
+
+    httpx_mock.add_response(
+        method='POST',
+        url=ConfigClass.WORKSPACE_SERVICE + 'guacamole/users',
+        json={'result': 'success'},
+        status_code=200,
+    )
+
     payload = {
         'user_id': RESOURCE_REQUEST['user_id'],
         'project_id': project_id,
@@ -244,7 +284,6 @@ async def test_post_request_create_200(test_async_client, httpx_mock, jwt_token_
     assert response.status_code == 200
 
 
-@pytest.mark.asyncio
 async def test_post_request_create_403(test_async_client, httpx_mock, jwt_token_contrib):
 
     different_project = PROJECT.copy()
@@ -268,12 +307,21 @@ async def test_post_request_create_403(test_async_client, httpx_mock, jwt_token_
     assert response.status_code == 403
 
 
-@pytest.mark.asyncio
 async def test_post_request_create_500(test_async_client, httpx_mock, jwt_token_contrib, has_permission_true):
     project_id = RESOURCE_REQUEST['project_id']
 
-    url = ConfigClass.PROJECT_SERVICE + '/v1/resource-requests/'
-    httpx_mock.add_response(method='POST', url=url, json=RESOURCE_REQUEST, status_code=500)
+    httpx_mock.add_response(
+        method='GET',
+        url=f'{ConfigClass.PROJECT_SERVICE}/v1/projects/{project_id}',
+        json={'code': PROJECT['code'], 'name': PROJECT['name']},
+    )
+
+    httpx_mock.add_response(
+        method='POST',
+        url=f'{ConfigClass.PROJECT_SERVICE}/v1/resource-requests/',
+        json=RESOURCE_REQUEST,
+        status_code=500,
+    )
 
     payload = {
         'user_id': RESOURCE_REQUEST['user_id'],

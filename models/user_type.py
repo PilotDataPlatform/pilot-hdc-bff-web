@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 from enum import Enum
@@ -13,6 +14,12 @@ class EUserRole(Enum):
     member = 2
     contributor = 3
     visitor = 4
+
+    @classmethod
+    def get_project_related(cls) -> list[str]:
+        """Return list of roles user may have withing a project."""
+
+        return [cls.admin.name, cls.collaborator.name, cls.contributor.name]
 
 
 def map_role_front_to_sys(role: str):

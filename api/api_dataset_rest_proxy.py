@@ -1,8 +1,13 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
+from typing import ClassVar
+from typing import Mapping
+
+import fastapi
 import httpx
 import requests
 from fastapi import APIRouter
@@ -10,20 +15,28 @@ from fastapi import Depends
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
+from starlette.datastructures import MultiDict
 
 from app.auth import jwt_required
 from app.components.exceptions import APIException
+from app.components.exceptions import UnhandledException
+from app.components.user.models import CurrentUser
+from app.logger import logger
 from config import ConfigClass
 from models.api_response import EAPIResponseCode
-from services.dataset import get_dataset_by_id
+from services.dataset.client import DatasetServiceClient
+from services.dataset.client import get_dataset_service_client
 from services.permissions_service.decorators import DatasetPermission
+from services.project.client import ProjectServiceClient
+from services.project.client import get_project_service_client
 
 router = APIRouter(tags=['Dataset'])
 
 
 @cbv.cbv(router)
 class Dataset:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.get(
         '/datasets/{dataset_id_or_code}',
@@ -35,7 +48,7 @@ class Dataset:
             response = await client.get(url)
         if response.status_code == 200:
             dataset = response.json()
-            if dataset['creator'] != self.current_identity['username']:
+            if not await self.current_identity.can_access_dataset(dataset, self.project_service_client):
                 raise APIException(error_msg='Permission denied', status_code=EAPIResponseCode.forbidden.value)
         return JSONResponse(content=response.json(), status_code=response.status_code)
 
@@ -51,7 +64,7 @@ class Dataset:
 
 @cbv.cbv(router)
 class RestfulPost:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.post(
         '/datasets/',
@@ -75,28 +88,146 @@ class RestfulPost:
         return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
 
-@cbv.cbv(router)
-class List:
-    current_identity: dict = Depends(jwt_required)
+class ProxyPass:
+    """PoC implementation of proxy pass.
 
-    @router.get(
-        '/datasets/',
-        summary='List users datasets',
-    )
-    async def get(self, request: Request):
-        url = ConfigClass.DATASET_SERVICE + 'datasets/'
-        username = request.query_params.get('creator')
-        operator_username = self.current_identity['username']
-        if operator_username != username:
-            return JSONResponse(content={'err_msg': 'No permissions'}, status_code=403)
-        async with httpx.AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
-            respon = await client.get(url, params=dict(request.query_params))
-        return JSONResponse(content=respon.json(), status_code=respon.status_code)
+    The goal is to generalize the method for defining a path to listen to, specifying allowed parameters, and
+    determining which service should be called, all without the need to write a lot of duplicated code.
+    """
+
+    request_allowed_parameters: ClassVar[set[str]]
+
+    response_allowed_headers: ClassVar[set[str]]
+
+    async def __call__(self, request: Request) -> fastapi.Response:
+        """Main method that will be called to process request into route."""
+
+        filtered_parameters = await self.filter_request_parameters(request)
+        parameters = await self.modify_request_parameters(filtered_parameters)
+        raw_response = await self.proxy_request(parameters)
+        response = await self.process_response(raw_response)
+
+        return response
+
+    async def filter_request_parameters(self, request: Request) -> MultiDict[str]:
+        """Iterate over query parameters and keep only allowed."""
+
+        parameters = MultiDict()
+
+        for allowed_parameter in self.request_allowed_parameters:
+            if allowed_parameter in request.query_params:
+                for value in request.query_params.getlist(allowed_parameter):
+                    parameters.append(allowed_parameter, value)
+
+        return parameters
+
+    async def modify_request_parameters(self, parameters: MultiDict[str]) -> MultiDict[str]:
+        """Perform modification over the query parameters."""
+
+        return MultiDict(parameters)
+
+    async def proxy_request(self, parameters: MultiDict[str]) -> httpx.Response:
+        """Perform request to the underlying service."""
+
+        return httpx.Response(status_code=100)
+
+    async def raise_for_response_status(self, response: httpx.Response) -> None:
+        """Raise exception when received response is not successful."""
+
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError:
+            logger.error(
+                f'Received "{response.status_code}" status code in response when calling "{response.request.url}" url'
+            )
+            raise UnhandledException
+
+    async def filter_response_headers(self, headers: httpx.Headers) -> Mapping[str, str]:
+        """Iterate over response headers and keep only allowed."""
+
+        processed_headers = {}
+
+        for header in self.response_allowed_headers:
+            if header in headers:
+                processed_headers[header] = headers[header]
+
+        return processed_headers
+
+    async def process_response(self, response: httpx.Response) -> fastapi.Response:
+        """Take the response from the underlying service and process it, so it can be returned to initial caller."""
+
+        await self.raise_for_response_status(response)
+
+        headers = await self.filter_response_headers(response.headers)
+
+        return fastapi.Response(content=response.content, status_code=response.status_code, headers=headers)
+
+
+@cbv.cbv(router)
+class ListDatasets(ProxyPass):
+    request_allowed_parameters: ClassVar[set[str]] = {
+        'creator',
+        'project_code',
+        'sort_by',
+        'sort_order',
+        'page',
+        'page_size',
+    }
+    response_allowed_headers: ClassVar[set[str]] = {'Content-Type'}
+
+    current_user: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
+    dataset_service_client: DatasetServiceClient = Depends(get_dataset_service_client)
+
+    @router.get('/datasets/', summary='List all Datasets user can access.')
+    async def __call__(self, request: Request) -> fastapi.Response:
+        return await super().__call__(request)
+
+    async def modify_request_parameters(self, parameters: MultiDict[str]) -> MultiDict[str]:
+        """Replace parameters with appropriate for Dataset Service and check permissions.
+
+        - If the creator parameter is specified it is set with the current username.
+        - If the project_code parameter is specified it is part of projects to which the current user has access.
+        - If neither creator nor project_code parameters are specified filtering by projects where user has admin roles or where user is the creator.
+        """
+
+        modified_parameters = MultiDict(parameters)
+
+        creator_parameter = modified_parameters.pop('creator', None)
+        project_code_parameter = modified_parameters.pop('project_code', None)
+
+        user_projects_with_admin_role = self.current_user.get_projects_with_role('admin')
+
+        if not creator_parameter and not project_code_parameter and user_projects_with_admin_role:
+            project_ids = []
+            for project_code in user_projects_with_admin_role:
+                project = await self.project_service_client.get(code=project_code)
+                project_ids.append(project.id)
+            modified_parameters['project_id_any'] = ','.join(project_ids)
+            modified_parameters['or_creator'] = self.current_user.username
+
+            return modified_parameters
+
+        if creator_parameter or not user_projects_with_admin_role:
+            modified_parameters['creator'] = self.current_user.username
+
+        if project_code_parameter:
+            user_projects = list(self.current_user.get_project_roles().keys())
+            if project_code_parameter not in user_projects:
+                raise APIException(error_msg='Permission denied', status_code=EAPIResponseCode.forbidden.value)
+
+            project = await self.project_service_client.get(code=project_code_parameter)
+            modified_parameters['project_id'] = project.id
+
+        return modified_parameters
+
+    async def proxy_request(self, parameters: MultiDict[str]) -> httpx.Response:
+        return await self.dataset_service_client.list_datasets(parameters)
 
 
 @cbv.cbv(router)
 class DatasetFiles:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get(
         '/dataset/{dataset_id}/files',
@@ -160,7 +291,7 @@ class DatasetFiles:
 
 @cbv.cbv(router)
 class DatasetFileUpdate:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.post(
         '/dataset/{dataset_id}/files/{file_id}',
@@ -178,7 +309,8 @@ class DatasetFileUpdate:
 
 @cbv.cbv(router)
 class DatsetTasks:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    dataset_service_client: DatasetServiceClient = Depends(get_dataset_service_client)
 
     @router.get(
         '/dataset/{dataset_id}/file/tasks',
@@ -189,7 +321,7 @@ class DatsetTasks:
         request_params = request.query_params
         new_params = {**request_params, 'label': 'Dataset'}
 
-        dataset = await get_dataset_by_id(dataset_id)
+        dataset = await self.dataset_service_client.get_dataset_by_id(dataset_id)
         new_params['code'] = dataset['code']
 
         url = ConfigClass.DATAOPS_SERVICE + 'tasks'
@@ -205,7 +337,7 @@ class DatsetTasks:
         request_body = await request.json()
         request_body.update({'label': 'Dataset'})
 
-        dataset = await get_dataset_by_id(dataset_id)
+        dataset = await self.dataset_service_client.get_dataset_by_id(dataset_id)
         request_body['code'] = dataset['code']
 
         url = ConfigClass.DATAOPS_SERVICE + 'tasks'

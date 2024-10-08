@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 from typing import Any
@@ -8,7 +9,6 @@ from typing import Dict
 from typing import Mapping
 from typing import Optional
 
-from common import ProjectClient
 from common import has_permission
 from common.project.project_client import ProjectObject
 from fastapi import APIRouter
@@ -17,11 +17,14 @@ from fastapi import Request
 from starlette.datastructures import MultiDict
 
 from app.auth import jwt_required
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import APIResponse
 from models.api_response import EAPIResponseCode
 from services.permissions_service.decorators import PermissionsCheck
+from services.project.client import ProjectServiceClient
+from services.project.client import get_project_service_client
 from services.search.client import SearchServiceClient
 from services.search.client import get_search_service_client
 
@@ -198,10 +201,12 @@ async def compile_file_size_for_zone_and_role(
     return await _ensure_datasets_in_size_response(size_result, project_code, current_identity)
 
 
-async def get_project(project_code: str) -> ProjectObject:
+async def get_project(
+    project_code: str, project_service_client: ProjectServiceClient = Depends(get_project_service_client)
+) -> ProjectObject:
     """Get project by code as a dependency."""
-    project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-    return await project_client.get(code=project_code)
+
+    return await project_service_client.get(code=project_code)
 
 
 async def get_params_for_current_identity(
@@ -244,7 +249,7 @@ async def get_params_for_current_identity(
 @router.get('/{project_code}/search', summary='Search through project files.')
 async def search(
     request: Request,
-    current_identity: Dict[str, Any] = Depends(jwt_required),
+    current_identity: CurrentUser = Depends(jwt_required),
     project: ProjectObject = Depends(get_project),
     search_service_client: SearchServiceClient = Depends(get_search_service_client),
 ):
@@ -274,7 +279,7 @@ async def search(
 )
 async def size(
     request: Request,
-    current_identity: Dict[str, Any] = Depends(jwt_required),
+    current_identity: CurrentUser = Depends(jwt_required),
     project: ProjectObject = Depends(get_project),
     search_service_client: SearchServiceClient = Depends(get_search_service_client),
 ):
@@ -298,7 +303,7 @@ async def size(
 )
 async def statistics(
     request: Request,
-    current_identity: Dict[str, Any] = Depends(jwt_required),
+    current_identity: CurrentUser = Depends(jwt_required),
     project: ProjectObject = Depends(get_project),
     search_service_client: SearchServiceClient = Depends(get_search_service_client),
 ):
@@ -325,7 +330,7 @@ async def statistics(
 )
 async def activity(
     request: Request,
-    current_identity: Dict[str, Any] = Depends(jwt_required),
+    current_identity: CurrentUser = Depends(jwt_required),
     project: ProjectObject = Depends(get_project),
     search_service_client: SearchServiceClient = Depends(get_search_service_client),
 ):

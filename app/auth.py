@@ -1,20 +1,23 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import json
+from typing import Union
 
-import aioredis
 import jwt
 from fastapi import Request
 from httpx import AsyncClient
+from redis.asyncio import Redis
 
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 
 
-async def jwt_required(request: Request):
+async def jwt_required(request: Request) -> CurrentUser:
     current_identity = await get_current_identity(request)
     if not current_identity:
         raise Exception("couldn't get user from jwt")
@@ -31,10 +34,10 @@ async def get_token(request: Request):
 async def check_cache(username):
     if ConfigClass.ENABLE_USER_CACHE:
         try:
-            redis = await aioredis.from_url(ConfigClass.REDIS_URL)
+            redis = await Redis.from_url(ConfigClass.REDIS_URL)
             user_key = f'current_identity-{username}'
             if await redis.exists(user_key):
-                return json.loads(await (redis.get(user_key)))
+                return json.loads(await redis.get(user_key))
         except Exception as e:
             logger.error(f"Couldn't connect to redis, skipping cache: {e}")
     return False
@@ -43,7 +46,7 @@ async def check_cache(username):
 async def set_cache(username, result):
     if ConfigClass.ENABLE_USER_CACHE:
         try:
-            redis = await aioredis.from_url(ConfigClass.REDIS_URL)
+            redis = await Redis.from_url(ConfigClass.REDIS_URL)
             user_key = f'current_identity-{username}'
             await redis.set(user_key, json.dumps(result), ConfigClass.USER_CACHE_EXPIRY)
         except Exception as e:
@@ -51,7 +54,7 @@ async def set_cache(username, result):
     return False
 
 
-async def get_current_identity(request: Request):
+async def get_current_identity(request: Request) -> Union[CurrentUser, None]:
     token = await get_token(request)
     payload = jwt.decode(token, options={'verify_signature': False})
     username: str = payload.get('preferred_username')
@@ -65,7 +68,7 @@ async def get_current_identity(request: Request):
     }
     cached_result = await check_cache(username)
     if cached_result:
-        return cached_result
+        return CurrentUser(cached_result)
 
     async with AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
         response = await client.get(ConfigClass.AUTH_SERVICE + 'admin/user', params=data)
@@ -102,4 +105,5 @@ async def get_current_identity(request: Request):
         'realm_roles': realm_roles,
     }
     await set_cache(username, result)
-    return result
+
+    return CurrentUser(result)

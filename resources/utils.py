@@ -1,12 +1,12 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import datetime
 from datetime import timezone
 
-import httpx
 import requests
 
 from config import ConfigClass
@@ -48,20 +48,3 @@ def helper_now_utc():
     dt = datetime.datetime.now()
     utc_time = dt.replace(tzinfo=timezone.utc)
     return utc_time
-
-
-def get_dataset(dataset_id: str) -> dict:
-    response = requests.get(
-        f'{ConfigClass.DATASET_SERVICE}datasets/{dataset_id}', timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT
-    )
-    res = response.json()
-    dataset = res
-    return dataset
-
-
-async def get_dataset_by_code(dataset_code: str) -> dict:
-    async with httpx.AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
-        response = await client.get(f'{ConfigClass.DATASET_SERVICE}datasets/{dataset_code}')
-    res = response.json()
-    dataset = res
-    return dataset

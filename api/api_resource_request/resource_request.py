@@ -1,13 +1,14 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import math
+import secrets
 from datetime import datetime
 
 import httpx
-from common import ProjectClient
 from common import has_permission
 from fastapi import APIRouter
 from fastapi import Depends
@@ -17,6 +18,7 @@ from fastapi_utils import cbv
 
 from app.auth import jwt_required
 from app.components.exceptions import APIException
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import APIResponse
@@ -25,13 +27,15 @@ from models.resource_request import CreateResourceRequest
 from models.resource_request import UpdateResourceRequest
 from services.notifier_services.email_service import SrvEmail
 from services.permissions_service.decorators import PermissionsCheck
+from services.project.client import ProjectServiceClient
+from services.project.client import get_project_service_client
 
 router = APIRouter(tags=['Resource Request'])
 
 
 @cbv.cbv(router)
 class ResourceRequest:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get(
         '/resource-request/{request_id}/',
@@ -145,7 +149,8 @@ class ResourceRequest:
 
 @cbv.cbv(router)
 class ResourceRequestComplete:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.put(
         '/resource-request/{request_id}/complete',
@@ -167,8 +172,7 @@ class ResourceRequestComplete:
             api_response.set_result(f'Error calling project service: {e}')
             return api_response.json_response()
 
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = await project_client.get(id=resource_request['project_id'])
+        project = await self.project_service_client.get(id=resource_request['project_id'])
 
         if not await has_permission(
             ConfigClass.AUTH_SERVICE, project.code, 'resource_request', '*', 'manage', self.current_identity
@@ -203,6 +207,22 @@ class ResourceRequestComplete:
                 )
             user = user_response.json()['result']
 
+        async with httpx.AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
+            data = {
+                'username': user['username'],
+                'email': user['email'],
+                'password': secrets.token_urlsafe(8),
+                'first_name': user['first_name'],
+                'last_name': user['last_name'],
+                'project_code': project.code,
+            }
+            vm_response = await client.put(ConfigClass.AUTH_SERVICE + 'vm/user', json=data)
+            if vm_response.status_code != 200:
+                raise APIException(
+                    error_msg=f'Error creating VM user for {user_id}: ' + str(vm_response.json()),
+                    status_code=vm_response.status_code,
+                )
+
         requested_for = resource_request['requested_for']
         template_kwargs = {
             'current_user': self.current_identity['username'],
@@ -233,7 +253,7 @@ class ResourceRequestComplete:
 
 @cbv.cbv(router)
 class ResourceRequestsQuery:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.post(
         '/resource-requests/query',
@@ -309,7 +329,8 @@ class ResourceRequestsQuery:
 
 @cbv.cbv(router)
 class ResourceRequests:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.post(
         '/resource-requests',
@@ -317,13 +338,11 @@ class ResourceRequests:
         dependencies=[Depends(PermissionsCheck('resource_request', '*', 'create'))],
     )
     async def post(self, data: CreateResourceRequest):
-
         """Create a new resource request, send email notification."""
         logger.info('ResourceRequests post called')
         api_response = APIResponse()
 
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = await project_client.get(id=data.project_id)
+        project = await self.project_service_client.get(id=data.project_id)
 
         user_role = None
         for role in self.current_identity['realm_roles']:
@@ -348,6 +367,9 @@ class ResourceRequests:
             if response.status_code != 200:
                 raise APIException(error_msg=response.json(), status_code=response.status_code)
         resource_request = response.json()
+
+        if await get_workbench(project.code):
+            await add_guacamole_user(self.current_identity['username'], project.code)
 
         username = self.current_identity['username']
         await send_email(resource_request, project, user_role, username)
@@ -389,3 +411,30 @@ async def send_email(resource_request, project, user_role, username):
         error_msg = f'Error sending email: {e}'
         logger.error(error_msg)
         raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
+
+
+async def add_guacamole_user(username: str, container_code: str) -> None:
+    payload = {'username': username, 'container_code': container_code}
+    async with httpx.AsyncClient() as client:
+        response = await client.post(ConfigClass.WORKSPACE_SERVICE + 'guacamole/users', json=payload)
+    if response.status_code != 200:
+        error_msg = response.json().get('error_msg')
+        logger.error(f'Error adding user to guacamole, user may already exist: {error_msg}')
+
+
+async def get_workbench(project_code: str) -> dict:
+    payload = {
+        'project_code': project_code,
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.get(ConfigClass.PROJECT_SERVICE + '/v1/workbenches/', params=payload)
+    if response.status_code != 200:
+        error_msg = response.json().get('error_msg')
+        logger.error(f'Error getting workbench entry: {error_msg}')
+        return None
+    resource_data = None
+    for entry in response.json()['result']:
+        if entry['resource'] == 'guacamole':
+            resource_data = entry
+            break
+    return resource_data

@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 from typing import Any
@@ -19,6 +20,7 @@ from api.api_announcement.dependencies import admin_role_required
 from api.api_announcement.dependencies import get_project
 from api.api_announcement.schemas import ProjectAnnouncementCreateSchema
 from app.auth import jwt_required
+from app.components.user.models import CurrentUser
 from services.notification.client import NotificationServiceClient
 from services.notification.client import get_notification_service_client
 from services.permissions_service.decorators import PermissionsCheck
@@ -54,7 +56,7 @@ async def list_project_announcements(
 async def create_project_announcement(
     body: ProjectAnnouncementCreateSchema,
     project: ProjectObject = Depends(get_project),
-    current_identity: Dict[str, Any] = Depends(jwt_required),
+    current_identity: CurrentUser = Depends(jwt_required),
     notification_service_client: NotificationServiceClient = Depends(get_notification_service_client),
 ) -> Union[Response, Dict[str, Any]]:
     """Create announcement for project.
@@ -75,7 +77,7 @@ async def create_project_announcement(
 @router.get('/maintenance-announcements/', summary='List maintenance announcements')
 async def list_maintenance_announcements(
     request: Request,
-    current_identity: Dict[str, Any] = Depends(jwt_required),
+    current_identity: CurrentUser = Depends(jwt_required),
     notification_service_client: NotificationServiceClient = Depends(get_notification_service_client),
 ):
     response = await notification_service_client.list_maintenance_announcements(request.query_params)
@@ -85,7 +87,7 @@ async def list_maintenance_announcements(
 @router.get('/maintenance-announcements/{announcement_id}', summary='Get maintenance announcement')
 async def get_maintenance_announcement(
     announcement_id: UUID,
-    current_identity: Dict[str, Any] = Depends(jwt_required),
+    current_identity: CurrentUser = Depends(jwt_required),
     notification_service_client: NotificationServiceClient = Depends(get_notification_service_client),
 ):
     announcement = await notification_service_client.get_maintenance_announcement(announcement_id)
@@ -95,7 +97,7 @@ async def get_maintenance_announcement(
 @router.post('/maintenance-announcements/', summary='Create maintenance announcement')
 async def create_maintenance_announcement(
     request: Request,
-    current_identity: Dict[str, Any] = Depends(admin_role_required),
+    current_identity: CurrentUser = Depends(admin_role_required),
     notification_service_client: NotificationServiceClient = Depends(get_notification_service_client),
 ):
     json = await request.json()
@@ -107,7 +109,7 @@ async def create_maintenance_announcement(
 async def update_maintenance_announcement(
     announcement_id: UUID,
     request: Request,
-    current_identity: Dict[str, Any] = Depends(admin_role_required),
+    current_identity: CurrentUser = Depends(admin_role_required),
     notification_service_client: NotificationServiceClient = Depends(get_notification_service_client),
 ):
     json = await request.json()
@@ -118,7 +120,7 @@ async def update_maintenance_announcement(
 @router.delete('/maintenance-announcements/{announcement_id}', summary='Delete maintenance announcement')
 async def delete_maintenance_announcement(
     announcement_id: UUID,
-    current_identity: Dict[str, Any] = Depends(admin_role_required),
+    current_identity: CurrentUser = Depends(admin_role_required),
     notification_service_client: NotificationServiceClient = Depends(get_notification_service_client),
 ):
     response = await notification_service_client.delete_maintenance_announcement(announcement_id)
@@ -133,7 +135,7 @@ async def delete_maintenance_announcement(
 )
 async def unsubscribe_from_maintenance_announcement(
     announcement_id: UUID,
-    current_identity: Dict[str, Any] = Depends(jwt_required),
+    current_identity: CurrentUser = Depends(jwt_required),
     notification_service_client: NotificationServiceClient = Depends(get_notification_service_client),
 ):
     current_username = current_identity['username']

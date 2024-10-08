@@ -1,10 +1,10 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import requests
-from common import ProjectClient
 from common import has_permission
 from fastapi import APIRouter
 from fastapi import Depends
@@ -14,11 +14,14 @@ from fastapi_utils import cbv
 from starlette.datastructures import MultiDict
 
 from app.auth import jwt_required
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import APIResponse
 from models.api_response import EAPIResponseCode
 from services.permissions_service.decorators import PermissionsCheck
+from services.project.client import ProjectServiceClient
+from services.project.client import get_project_service_client
 from services.search.client import SearchServiceClient
 from services.search.client import get_search_service_client
 
@@ -27,7 +30,8 @@ router = APIRouter(tags=['Project'])
 
 @cbv.cbv(router)
 class RestfulProject:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.get(
         '/project/{project_id}',
@@ -36,15 +40,15 @@ class RestfulProject:
     )
     async def get(self, project_id: str):
         my_res = APIResponse()
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = await project_client.get(id=project_id)
+        project = await self.project_service_client.get(id=project_id)
         my_res.set_result(await project.json())
         return my_res.json_response()
 
 
 @cbv.cbv(router)
 class RestfulProjectByCode:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.get(
         '/project/code/{project_code}',
@@ -53,15 +57,14 @@ class RestfulProjectByCode:
     )
     async def get(self, project_code: str):
         my_res = APIResponse()
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = await project_client.get(code=project_code)
+        project = await self.project_service_client.get(code=project_code)
         my_res.set_result(await project.json())
         return my_res.json_response()
 
 
 @cbv.cbv(router)
 class VirtualFolder:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.put(
         '/project/{project_id}/collections',
@@ -77,7 +80,8 @@ class VirtualFolder:
 
 @cbv.cbv(router)
 class ActivityLogs:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.get(
         '/project/activity-logs/{project_id}',
@@ -96,8 +100,7 @@ class ActivityLogs:
 
         try:
             params = MultiDict(request.query_params)
-            project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-            project = await project_client.get(id=project_id)
+            project = await self.project_service_client.get(id=project_id)
 
             if not await has_permission(
                 ConfigClass.AUTH_SERVICE, project.code, 'file_any', 'greenroom', 'view', self.current_identity

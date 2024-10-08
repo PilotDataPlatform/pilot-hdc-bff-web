@@ -1,11 +1,11 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import jwt as pyjwt
 import requests
-from common import ProjectClient
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Request
@@ -15,10 +15,13 @@ from httpx import AsyncClient
 
 from app.auth import jwt_required
 from app.components.exceptions import APIException
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import EAPIResponseCode
 from services.notifier_services.email_service import SrvEmail
+from services.project.client import ProjectServiceClient
+from services.project.client import get_project_service_client
 
 router = APIRouter(tags=['Auth'])
 
@@ -75,7 +78,8 @@ class UserStatus:
 
 @cbv.cbv(router)
 class UserAccount:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.put(
         '/user/account',
@@ -161,12 +165,11 @@ class UserAccount:
             )
 
     async def create_usernamespace_folder_admin(self, username):
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
         page = 0
-        result = await project_client.search(page=page, page_size=50)
+        result = await self.project_service_client.search(page=page, page_size=50)
         projects = result['result']
         while projects:
-            result = await project_client.search(page=page, page_size=50)
+            result = await self.project_service_client.search(page=page, page_size=50)
             projects = result['result']
             project_codes = [i.code for i in projects]
             page += 1

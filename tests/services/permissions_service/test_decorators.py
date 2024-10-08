@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import pytest
@@ -29,11 +30,11 @@ async def test_find_project_code_returns_project_code_when_project_code_is_set(f
     assert received_project_code == project_code
 
 
-async def test_find_project_code_returns_project_code_when_project_id_is_set(fake, project_client):
-    project_id = fake.project_id()
-    project_code = fake.project_code()
-    await project_client.create_project(project_id, project_code)
+async def test_find_project_code_returns_project_code_when_project_id_is_set(project_factory, project_service_client):
+    project = project_factory.mock_retrieval_by_id()
 
-    received_project_code = await find_project_code(project_id=project_id, project_service_client=project_client)
+    received_project_code = await find_project_code(
+        project_id=str(project.id), project_service_client=project_service_client
+    )
 
-    assert received_project_code == project_code
+    assert received_project_code == project.code

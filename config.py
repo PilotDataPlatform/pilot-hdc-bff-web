@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import logging
@@ -75,12 +76,13 @@ class Settings(BaseSettings):
     SEARCH_SERVICE: str
     WORKSPACE_SERVICE: str
 
-    REDIS_HOST: str
-    REDIS_PORT: str
-    REDIS_PASSWORD: str
+    REDIS_HOST: str = '127.0.0.1'
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str = ''
 
     USER_CACHE_EXPIRY: int = 180
     ENABLE_USER_CACHE: bool = True
+    ENABLE_CACHE: bool = True
 
     # Email addresses
     EMAIL_SUPPORT: str

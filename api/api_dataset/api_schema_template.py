@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import requests
@@ -11,6 +12,7 @@ from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 
 from app.auth import jwt_required
+from app.components.user.models import CurrentUser
 from config import ConfigClass
 from services.permissions_service.decorators import DatasetPermission
 
@@ -19,7 +21,7 @@ router = APIRouter(tags=['Dataset Schema Template'])
 
 @cbv.cbv(router)
 class SchemaTemplate:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.get(
         '/dataset/{dataset_id}/schemaTPL/{template_id}',
@@ -62,7 +64,7 @@ class SchemaTemplate:
 
 @cbv.cbv(router)
 class SchemaTemplateCreate:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
 
     @router.post(
         '/dataset/{dataset_id}/schemaTPL',

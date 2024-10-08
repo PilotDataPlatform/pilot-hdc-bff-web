@@ -1,12 +1,12 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 from typing import Any
 from typing import Dict
 
-from common import ProjectClient
 from common.project.project_client import ProjectObject
 from fastapi import APIRouter
 from fastapi import Depends
@@ -17,6 +17,7 @@ from httpx import AsyncClient
 
 from app.auth import jwt_required
 from app.components.exceptions import APIException
+from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import EAPIResponseCode
@@ -25,13 +26,16 @@ from resources.utils import add_user_to_ad_group
 from resources.utils import remove_user_from_project_group
 from services.notifier_services.email_service import SrvEmail
 from services.permissions_service.decorators import PermissionsCheck
+from services.project.client import ProjectServiceClient
+from services.project.client import get_project_service_client
 
 router = APIRouter(tags=['Container User Actions'])
 
 
 @cbv.cbv(router)
 class ContainerUser:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.post(
         '/containers/{project_id}/users/{username}',
@@ -48,8 +52,7 @@ class ContainerUser:
             logger.error('Error: user\'s role is required.')
             return {'result': "User's role is required."}
 
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = await project_client.get(id=project_id)
+        project = await self.project_service_client.get(id=project_id)
 
         user = await validate_user(username)
         user_email = user['email']
@@ -96,8 +99,7 @@ class ContainerUser:
         if not is_valid:
             return JSONResponse(content=res_valid, status_code=code)
 
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = await project_client.get(id=project_id)
+        project = await self.project_service_client.get(id=project_id)
 
         user = await validate_user(username)
         user_email = user['email']
@@ -125,8 +127,7 @@ class ContainerUser:
         user = await validate_user(username)
         user_email = user['email']
 
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = await project_client.get(id=project_id)
+        project = await self.project_service_client.get(id=project_id)
         async with AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
             response = await client.get(
                 ConfigClass.AUTH_SERVICE + 'admin/users/realm-roles', params={'username': username}
@@ -147,6 +148,14 @@ class ContainerUser:
         await keycloak_user_role_delete(
             user_email, f'{project.code}-{project_role}', project.code, self.current_identity['username']
         )
+
+        async with AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
+            response = await client.delete(
+                ConfigClass.AUTH_SERVICE + 'vm/hbac/remove', params={'username': username, 'rule': project.code}
+            )
+            if response.status_code != 200:
+                raise Exception(str(response.__dict__))
+
         return {'result': 'success'}
 
 

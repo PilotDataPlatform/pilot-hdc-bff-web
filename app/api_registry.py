@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 from fastapi import FastAPI
@@ -49,6 +50,7 @@ from api.api_resource_request import resource_request
 from api.api_tags import api_batch_tags_operation
 from api.api_tags import api_tags_operation
 from api.api_user_event import event
+from api.api_vm import vm
 from api.api_workspace import workspace
 
 
@@ -79,6 +81,7 @@ def api_registry(app: FastAPI) -> None:
     app.include_router(meta.router, prefix='/v1')
     app.include_router(vfolder_ops.router, prefix='/v1')
     app.include_router(kg.router, prefix='/v1')
+    app.include_router(vm.router, prefix='/v1')
     app.include_router(notification.router, prefix='/v1')
     app.include_router(api_preview.router, prefix='/v1')
     app.include_router(api_project.router, prefix='/v1')

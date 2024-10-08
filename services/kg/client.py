@@ -1,8 +1,10 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
+from enum import Enum
 from typing import Any
 from typing import Dict
 from typing import Mapping
@@ -16,6 +18,14 @@ from app.components.exceptions import ServiceException
 from app.logger import logger
 from config import Settings
 from config import get_settings
+
+
+class KGRole(str, Enum):
+    """Mapping of KG roles to Project roles."""
+
+    administrator = 'admin'
+    editor = 'collaborator'
+    viewer = 'contributor'
 
 
 class KGServiceException(ServiceException):
@@ -168,11 +178,35 @@ class KGServiceClient:
 
         return response
 
+    async def upload_metadata_from_kg(self, kg_instance_id: str, dataset_id: str, **kwargs) -> Response:
+        """Upload metadata to KG."""
+
+        url = f'{self.endpoint}/metadata/upload/{kg_instance_id}/{dataset_id}'
+        response = await self._get(url, **kwargs)
+
+        return response
+
+    async def refresh_metadata_from_kg(self, metadata_id: str, **kwargs) -> Response:
+        """Upload metadata to KG."""
+
+        url = f'{self.endpoint}/metadata/refresh/{metadata_id}'
+        response = await self._get(url, **kwargs)
+
+        return response
+
     async def update_metadata(self, metadata_id: str, json: Dict[str, Any], **kwargs) -> Response:
         """Update metadata on KG."""
 
         url = f'{self.endpoint}/metadata/update/{metadata_id}'
         response = await self._put(url, json=json, **kwargs)
+
+        return response
+
+    async def delete_metadata(self, metadata_id: str, **kwargs) -> Response:
+        """Delete metadata on KG."""
+
+        url = f'{self.endpoint}/metadata/{metadata_id}'
+        response = await self.client.delete(url, **kwargs)
 
         return response
 

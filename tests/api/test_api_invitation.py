@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import uuid
@@ -27,7 +28,7 @@ def test_get_invite_register_200(test_client, httpx_mock):
         json=LIST_RESULT,
     )
     invite_code = LIST_RESULT['result'][0]['invitation_code']
-    response = test_client.get(ConfigClass.AUTH_SERVICE + f'register/invitation/{invite_code}')
+    response = test_client.get(f'/v1/register/invitation/{invite_code}')
     assert response.status_code == 200
 
 
@@ -39,7 +40,7 @@ def test_get_invite_register_404(test_client, httpx_mock):
         json={'result': []},
     )
     invite_code = LIST_RESULT['result'][0]['invitation_code']
-    response = test_client.get(ConfigClass.AUTH_SERVICE + f'register/invitation/{invite_code}')
+    response = test_client.get(f'/v1/register/invitation/{invite_code}')
     assert response.status_code == 404
 
 
@@ -75,7 +76,7 @@ def test_post_invite_register_200(test_client, httpx_mock, mocker):
         'first_name': 'Test',
         'last_name': 'Testing',
     }
-    response = test_client.post(ConfigClass.AUTH_SERVICE + f'register/invitation/{invite_code}', json=payload)
+    response = test_client.post(f'/v1/register/invitation/{invite_code}', json=payload)
     assert response.status_code == 200
 
 
@@ -96,7 +97,7 @@ def test_post_invite_register_404(test_client, httpx_mock, mocker):
         'first_name': 'Test',
         'last_name': 'Testing',
     }
-    response = test_client.post(ConfigClass.AUTH_SERVICE + f'register/invitation/{invite_code}', json=payload)
+    response = test_client.post(f'/v1/register/invitation/{invite_code}', json=payload)
     assert response.status_code == 404
 
 
@@ -124,7 +125,7 @@ def test_post_invite_register_create_user_error_500(test_client, httpx_mock, moc
         'first_name': 'Test',
         'last_name': 'Testing',
     }
-    response = test_client.post(ConfigClass.AUTH_SERVICE + f'register/invitation/{invite_code}', json=payload)
+    response = test_client.post(f'/v1/register/invitation/{invite_code}', json=payload)
     assert response.status_code == 500
 
 
@@ -152,7 +153,7 @@ def test_post_invite_register_email_error_500(test_client, httpx_mock, mocker):
         'first_name': 'Test',
         'last_name': 'Testing',
     }
-    response = test_client.post(ConfigClass.AUTH_SERVICE + f'register/invitation/{invite_code}', json=payload)
+    response = test_client.post(f'/v1/register/invitation/{invite_code}', json=payload)
     assert response.status_code == 500
 
 
@@ -188,5 +189,5 @@ def test_post_invite_register_invite_update_error_500(test_client, httpx_mock, m
         'first_name': 'Test',
         'last_name': 'Testing',
     }
-    response = test_client.post(ConfigClass.AUTH_SERVICE + f'register/invitation/{invite_code}', json=payload)
+    response = test_client.post(f'/v1/register/invitation/{invite_code}', json=payload)
     assert response.status_code == 500

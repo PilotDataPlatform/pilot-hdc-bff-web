@@ -1,6 +1,7 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import re
@@ -12,7 +13,6 @@ from api.api_notification.parameters import NotificationType
 from config import ConfigClass
 
 
-@pytest.mark.asyncio
 async def test_user_notifications_without_type_calls_notification_service_with_user_notification_route(
     mocker, test_async_client, httpx_mock
 ):
@@ -43,7 +43,6 @@ async def test_user_notifications_without_type_calls_notification_service_with_u
     assert response.json() == expected_response
 
 
-@pytest.mark.asyncio
 async def test_user_notifications_with_project_type_calls_notification_service_with_additional_project_code_any_param(
     mocker, test_async_client, httpx_mock
 ):
@@ -75,7 +74,6 @@ async def test_user_notifications_with_project_type_calls_notification_service_w
     assert response.json() == expected_response
 
 
-@pytest.mark.asyncio
 async def test_user_notifications_with_maintenance_type_calls_notification_service_with_maintenance_type_param(
     mocker, test_async_client, httpx_mock
 ):
@@ -98,7 +96,6 @@ async def test_user_notifications_with_maintenance_type_calls_notification_servi
     assert response.json() == expected_response
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     'notification_type', [NotificationType.PIPELINE, NotificationType.COPY_REQUEST, NotificationType.ROLE_CHANGE]
 )
@@ -127,7 +124,6 @@ async def test_user_notifications_with_type_calls_notification_service_with_prop
     assert response.json() == expected_response
 
 
-@pytest.mark.asyncio
 async def test_user_notifications_replaces_zone_numbers_in_response_with_string_values(
     mocker, test_async_client, httpx_mock
 ):

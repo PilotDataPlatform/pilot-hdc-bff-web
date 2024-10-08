@@ -1,9 +1,9 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
-from common import ProjectClient
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Request
@@ -12,14 +12,18 @@ from fastapi_utils import cbv
 from httpx import AsyncClient
 
 from app.auth import jwt_required
+from app.components.user.models import CurrentUser
 from config import ConfigClass
+from services.project.client import ProjectServiceClient
+from services.project.client import get_project_service_client
 
 router = APIRouter(tags=['User Event'])
 
 
 @cbv.cbv(router)
 class Event:
-    current_identity: dict = Depends(jwt_required)
+    current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
     @router.get(
         '/user/events',
@@ -35,8 +39,7 @@ class Event:
 
         projects = []
         for code in project_codes:
-            project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-            project = await project_client.get(code=code)
+            project = await self.project_service_client.get(code=code)
             projects.append(await project.json())
 
         for event in events:

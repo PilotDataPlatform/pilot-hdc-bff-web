@@ -1,12 +1,13 @@
-# Copyright (C) 2022-2023 Indoc Systems
+# Copyright (C) 2022-Present Indoc Systems
 #
-# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE, Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
+# Licensed under the GNU AFFERO GENERAL PUBLIC LICENSE,
+# Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
 import jwt as pyjwt
 import requests
-from common import ProjectClient
 from fastapi import APIRouter
+from fastapi import Depends
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
@@ -15,17 +16,27 @@ from httpx import AsyncClient
 from app.logger import logger
 from config import ConfigClass
 from models.models_item import ItemStatus
+from resources.utils import add_user_to_ad_group
+from services.kg.client import KGRole
+from services.kg.client import KGServiceClient
+from services.kg.client import get_kg_service_client
+from services.project.client import ProjectServiceClient
+from services.project.client import get_project_service_client
 
 router = APIRouter(tags=['User Activate'])
 
 
 @cbv.cbv(router)
 class ADUserUpdate:
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
+
     @router.put(
         '/users',
         summary='Activate AD user account on platform',
     )
-    async def put(self, request: Request):  # noqa: C901
+    async def put(  # noqa: C901
+        self, request: Request, kg_service_client: KGServiceClient = Depends(get_kg_service_client)
+    ):
         """This method allow user to activate the AD user account on platform."""
         try:
             token = request.headers.get('Authorization')
@@ -53,13 +64,14 @@ class ADUserUpdate:
 
             has_invite = True
             email = email.lower()
-            filters = {'email': email, 'status': 'pending'}
+            filters = {'email': email, 'status': 'sent'}
             async with AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
                 response = await client.post(ConfigClass.AUTH_SERVICE + 'invitation-list', json={'filters': filters})
             if not response.json()['result']:
                 has_invite = False
 
             if has_invite:
+                logger.info('User has invite.')
                 invite_detail = response.json()['result'][0]
 
                 if invite_detail['platform_role'] == 'admin':
@@ -67,12 +79,16 @@ class ADUserUpdate:
                     await self.bulk_create_name_folder_admin(username)
                 else:
                     if invite_detail['project_code']:
-                        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-                        project = await project_client.get(code=invite_detail['project_code'])
+                        project = await self.project_service_client.get(code=invite_detail['project_code'])
                         await self.assign_user_role_ad(
                             project.code + '-' + invite_detail['project_role'], email=email, project_code=project.code
                         )
                         await self.bulk_create_folder(folder_name=username, project_code_list=[project.code])
+                        add_user_to_ad_group(email, project.code, logger)
+                        kg_role = KGRole(invite_detail['project_role'])
+                        await kg_service_client.add_user_to_space(
+                            project_id=project.id, username=username, params={'role': kg_role.name}
+                        )
 
                 invite_id = invite_detail['id']
                 async with AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
@@ -165,8 +181,7 @@ class ADUserUpdate:
     async def bulk_create_name_folder_admin(self, username):
         try:
             project_code_list = []
-            project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-            project_result = await project_client.search()
+            project_result = await self.project_service_client.search()
             projects = project_result['result']
             for project in projects:
                 project_code_list.append(project.code)
