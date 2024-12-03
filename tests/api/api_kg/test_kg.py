@@ -7,6 +7,7 @@
 import re
 from uuid import uuid4
 
+from app.components.user.models import CurrentUser
 from config import ConfigClass
 
 
@@ -69,17 +70,23 @@ async def test_create_space_for_project_calls_kg_service(
     assert response.status_code == 201
 
 
-async def test_create_space_for_dataset_calls_kg_service(test_async_client, httpx_mock):
+async def test_create_space_for_dataset_calls_kg_service(test_async_client, httpx_mock, mocker, dataset_factory):
+    dataset = dataset_factory.mock_retrieval_by_code()
+    mocker.patch(
+        'services.permissions_service.decorators.get_current_identity',
+        return_value=CurrentUser({'username': dataset.creator}),
+    )
+
     headers = {'Authorization': 'Bearer token'}
     httpx_mock.add_response(
         method='POST',
-        url=f'{ConfigClass.KG_SERVICE}/v1/spaces/create/dataset/test',
+        url=f'{ConfigClass.KG_SERVICE}/v1/spaces/create/dataset/{dataset.code}',
         json={},
         status_code=201,
         match_headers=headers,
     )
 
-    response = await test_async_client.post('/v1/kg/spaces/create/dataset/test', json={}, headers=headers)
+    response = await test_async_client.post(f'/v1/kg/spaces/create/dataset/{dataset.code}', json={}, headers=headers)
 
     assert response.status_code == 201
 

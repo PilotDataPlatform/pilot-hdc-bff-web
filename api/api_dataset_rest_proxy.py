@@ -4,8 +4,8 @@
 # Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
+from collections.abc import Mapping
 from typing import ClassVar
-from typing import Mapping
 
 import fastapi
 import httpx
@@ -65,14 +65,24 @@ class Dataset:
 @cbv.cbv(router)
 class RestfulPost:
     current_identity: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
 
-    @router.post(
-        '/datasets/',
-        summary='create dataset',
-    )
+    @router.post('/datasets/', summary='Create dataset')
     async def post(self, request: Request):
-        url = ConfigClass.DATASET_SERVICE + 'datasets/'
         payload_json = await request.json()
+
+        dataset_code = payload_json.get('code', '').strip()
+        if dataset_code in ConfigClass.FORBIDDEN_CONTAINER_CODES:
+            raise APIException(error_msg='Dataset code is not allowed', status_code=EAPIResponseCode.forbidden.value)
+
+        project_code = payload_json.pop('project_code', '').strip()
+        if not self.current_identity.can_access_project(project_code):
+            raise APIException(error_msg='Project code is not allowed', status_code=EAPIResponseCode.forbidden.value)
+
+        project = await self.project_service_client.get(code=project_code)
+        payload_json['project_id'] = project.id
+
+        url = ConfigClass.DATASET_SERVICE + 'datasets/'
         operator_username = self.current_identity['username']
         dataset_creator = payload_json.get('creator')
         if operator_username != dataset_creator:
@@ -80,6 +90,7 @@ class RestfulPost:
                 content={'err_msg': f'No permissions: {operator_username} cannot create dataset for {dataset_creator}'},
                 status_code=403,
             )
+
         async with httpx.AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
             headers = dict(request.headers)
             del headers['content-length']
@@ -188,7 +199,8 @@ class ListDatasets(ProxyPass):
 
         - If the creator parameter is specified it is set with the current username.
         - If the project_code parameter is specified it is part of projects to which the current user has access.
-        - If neither creator nor project_code parameters are specified filtering by projects where user has admin roles or where user is the creator.
+        - If neither creator nor project_code parameters are specified filtering by projects where user has admin roles
+        or where user is the creator.
         """
 
         modified_parameters = MultiDict(parameters)

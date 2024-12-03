@@ -44,10 +44,34 @@ class TestCurrentUser:
 
         assert user.realm_roles == realm_roles
 
+    def test_test_is_platform_admin_returns_true_when_user_has_that_role_in_realm_roles(self, fake):
+        realm_roles = [f'platform-{EUserRole.admin.name}']
+        user = CurrentUser({'realm_roles': realm_roles})
+
+        assert user.is_platform_admin is True
+
+    def test_test_is_platform_admin_returns_false_when_user_does_not_have_that_role_in_realm_roles(self, fake):
+        realm_roles = [fake.pystr()]
+        user = CurrentUser({'realm_roles': realm_roles})
+
+        assert user.is_platform_admin is False
+
     def test_get_project_roles_returns_dict_with_projects_and_roles_based_on_realm_roles(self, fake):
         project_code = fake.project_code()
         project_role = random.choice(EUserRole.get_project_related())
         realm_roles = [f'{project_code}-{project_role}']
+        expected_project_roles = {project_code: project_role}
+
+        received_project_roles = CurrentUser({'realm_roles': realm_roles}).get_project_roles()
+
+        assert received_project_roles == expected_project_roles
+
+    def test_get_project_roles_returns_dict_with_projects_and_roles_based_on_realm_roles_excluding_platform_admin_role(
+        self, fake
+    ):
+        project_code = fake.project_code()
+        project_role = random.choice(EUserRole.get_project_related())
+        realm_roles = [f'{project_code}-{project_role}', f'platform-{EUserRole.admin.name}']
         expected_project_roles = {project_code: project_role}
 
         received_project_roles = CurrentUser({'realm_roles': realm_roles}).get_project_roles()
@@ -109,3 +133,26 @@ class TestCurrentUser:
         assert await user.can_access_dataset(dataset, project_service_client) is expected_result
 
         convert_codes_method.assert_called_once()
+
+    def test_can_access_project_returns_true_when_user_has_a_platform_admin_realm_role(self, fake):
+        project_code = fake.project_code()
+        realm_roles = [f'platform-{EUserRole.admin.name}']
+        user = CurrentUser({'realm_roles': realm_roles})
+
+        assert user.can_access_project(project_code) is True
+
+    def test_can_access_project_returns_true_when_user_has_project_related_role_in_realm_roles(self, fake):
+        project_code = fake.project_code()
+        project_role = random.choice(EUserRole.get_project_related())
+        realm_roles = [f'{project_code}-{project_role}']
+        user = CurrentUser({'realm_roles': realm_roles})
+
+        assert user.can_access_project(project_code) is True
+
+    def test_can_access_project_returns_false_when_user_does_not_have_project_related_role_in_realm_roles(self, fake):
+        project_code = fake.project_code()
+        project_role = random.choice(EUserRole.get_project_related())
+        realm_roles = [f'{fake.pystr()}-{project_role}']
+        user = CurrentUser({'realm_roles': realm_roles})
+
+        assert user.can_access_project(project_code) is False

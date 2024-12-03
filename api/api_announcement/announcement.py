@@ -4,9 +4,6 @@
 # Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
-from typing import Any
-from typing import Dict
-from typing import Union
 from uuid import UUID
 
 from common.project.project_client import ProjectObject
@@ -37,7 +34,7 @@ async def list_project_announcements(
     request: Request,
     project: ProjectObject = Depends(get_project),
     notification_service_client: NotificationServiceClient = Depends(get_notification_service_client),
-) -> Dict[str, Any]:
+):
     """List announcements for project.
 
     The "project" type notifications are queried using the notification service.
@@ -58,7 +55,7 @@ async def create_project_announcement(
     project: ProjectObject = Depends(get_project),
     current_identity: CurrentUser = Depends(jwt_required),
     notification_service_client: NotificationServiceClient = Depends(get_notification_service_client),
-) -> Union[Response, Dict[str, Any]]:
+):
     """Create announcement for project.
 
     The "project" type notification is created using the notification service.

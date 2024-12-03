@@ -4,8 +4,6 @@
 # Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
-from typing import Union
-
 from common import ProjectException
 from common import configure_logging
 from fastapi import FastAPI
@@ -20,6 +18,7 @@ from opentelemetry.sdk.resources import SERVICE_NAME
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from prometheus_fastapi_instrumentator import PrometheusFastApiInstrumentator
 
 from app.api_registry import api_registry
 from app.components.exceptions import APIException
@@ -30,7 +29,7 @@ from config import Settings
 from config import get_settings
 
 
-def create_app(settings: Union[Settings, None] = None) -> FastAPI:
+def create_app(settings: Settings | None = None) -> FastAPI:
     """Initialize and configure the application."""
 
     if settings is None:
@@ -47,6 +46,7 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
     setup_routers(app)
     setup_middlewares(app, settings)
     setup_exception_handlers(app)
+    setup_metrics(app, settings)
     setup_tracing(app, settings)
 
     return app
@@ -85,7 +85,7 @@ def setup_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(Exception, unexpected_exception_handler)
 
 
-def legacy_exception_handler(request: Request, exception: Union[APIException, ProjectException]) -> JSONResponse:
+def legacy_exception_handler(request: Request, exception: APIException | ProjectException) -> JSONResponse:
     """Return backward compatible response structure for legacy exceptions."""
 
     return JSONResponse(status_code=exception.status_code, content=exception.content)
@@ -105,6 +105,15 @@ def unexpected_exception_handler(request: Request, exception: Exception) -> JSON
     )
 
     return service_exception_handler(request, UnhandledException())
+
+
+def setup_metrics(app: FastAPI, settings: Settings) -> None:
+    """Instrument the application and expose endpoint for Prometheus metrics."""
+
+    if not settings.ENABLE_PROMETHEUS_METRICS:
+        return
+
+    PrometheusFastApiInstrumentator().instrument(app).expose(app, include_in_schema=False)
 
 
 def setup_tracing(app: FastAPI, settings: Settings) -> None:

@@ -10,9 +10,13 @@ from fastapi import Request
 from fastapi_utils import cbv
 
 from app.auth import jwt_required
+from app.components.exceptions import APIException
 from app.components.user.models import CurrentUser
 from app.logger import logger
+from config import Settings
+from config import get_settings
 from models.api_response import APIResponse
+from models.api_response import EAPIResponseCode
 from services.permissions_service.decorators import PermissionsCheck
 from services.project.client import ProjectServiceClient
 from services.project.client import get_project_service_client
@@ -24,6 +28,7 @@ router = APIRouter(tags=['Project'])
 class RestfulProjectsV2:
     current_identity: CurrentUser = Depends(jwt_required)
     project_service_client: ProjectServiceClient = Depends(get_project_service_client)
+    settings: Settings = Depends(get_settings)
 
     @router.post(
         '/projects', summary='Create a project', dependencies=[Depends(PermissionsCheck('project', '*', 'create'))]
@@ -34,12 +39,16 @@ class RestfulProjectsV2:
         Notice that top-level container could only be created by site admin.
         """
         post_data = await request.json()
+
+        project_code = post_data.get('code', '').strip()
+        if project_code in self.settings.FORBIDDEN_CONTAINER_CODES:
+            raise APIException(error_msg='Project code is not allowed', status_code=EAPIResponseCode.forbidden.value)
+
         _res = APIResponse()
         logger.info(f'Calling API for creating project: {post_data}')
-
         payload = {
             'name': post_data.get('name'),
-            'code': post_data.get('code'),
+            'code': project_code,
             'description': post_data.get('description'),
             'is_discoverable': post_data.get('discoverable'),
             'tags': post_data.get('tags'),

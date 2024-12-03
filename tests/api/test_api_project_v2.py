@@ -4,6 +4,7 @@
 # Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
+import random
 from uuid import uuid4
 
 from config import ConfigClass
@@ -47,3 +48,15 @@ def test_create_project_returns_error(test_client, requests_mocker, httpx_mock, 
     headers = {'Authorization': ''}
     response = test_client.post('/v1/projects', json=payload, headers=headers)
     assert response.status_code == 500
+
+
+def test_create_project_returns_forbidden_status_code_when_project_code_is_in_forbidden_list(
+    test_client, jwt_token_admin, has_permission_true, settings
+):
+    project_code = random.choice(list(settings.FORBIDDEN_CONTAINER_CODES))
+
+    headers = {'Authorization': ''}
+    response = test_client.post('/v1/projects', json={'code': project_code}, headers=headers)
+
+    assert response.status_code == 403
+    assert response.json()['error_msg'] == 'Project code is not allowed'

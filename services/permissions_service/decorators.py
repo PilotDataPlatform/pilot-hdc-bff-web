@@ -5,7 +5,7 @@
 # You may not use this file except in compliance with the License.
 
 from http import HTTPStatus
-from typing import Optional
+from json import JSONDecodeError
 
 from common import has_permission
 from fastapi import Depends
@@ -25,10 +25,10 @@ from services.project.client import get_project_service_client
 
 
 async def find_project_code(
-    project_code: Optional[str] = None,
-    project_id: Optional[str] = None,
+    project_code: str | None = None,
+    project_id: str | None = None,
     project_service_client: ProjectServiceClient = Depends(get_project_service_client),
-) -> Optional[str]:
+) -> str | None:
     """Find project code through a FastAPI dependency."""
 
     if project_code is not None and project_id is not None:
@@ -53,7 +53,7 @@ class PermissionsCheck:
         self.zone = zone
         self.operation = operation
 
-    async def __call__(self, request: Request, project_code: Optional[str] = Depends(find_project_code)) -> bool:
+    async def __call__(self, request: Request, project_code: str | None = Depends(find_project_code)) -> None:
         if project_code is None:
             project_code = await get_project_code_from_request(request)
 
@@ -64,7 +64,7 @@ class PermissionsCheck:
         if await has_permission(
             ConfigClass.AUTH_SERVICE, project_code, self.resource, self.zone, self.operation, current_identity
         ):
-            return True
+            return
 
         logger.info(f'Permission denied for {project_code} - {self.resource} - {self.zone} - {self.operation}')
         raise APIException(error_msg='Permission denied', status_code=EAPIResponseCode.forbidden.value)
@@ -76,21 +76,22 @@ class DatasetPermission:
         request: Request,
         dataset_service_client: DatasetServiceClient = Depends(get_dataset_service_client),
         project_service_client: ProjectServiceClient = Depends(get_project_service_client),
-    ) -> bool:
+    ) -> None:
         try:
             data = await request.json()
-            dataset_code = request.path_params.get('dataset_code') or data.get('dataset_code')
-            dataset_id = request.path_params.get('dataset_id')
-            if not dataset_id:
-                dataset_id = data.get('dataset_id') or data.get('dataset_geid') or data.get('dataset_id_or_code')
-            if dataset_code:
-                dataset = await dataset_service_client.get_dataset_by_code(dataset_code)
-            else:
-                dataset = await dataset_service_client.get_dataset_by_id(dataset_id)
-            current_identity = await get_current_identity(request)
-            if not await current_identity.can_access_dataset(dataset, project_service_client):
-                raise APIException(error_msg='Permission denied', status_code=EAPIResponseCode.forbidden.value)
-            return True
-        except Exception:
-            logger.exception('error while get dataset permission')
-            return False
+        except JSONDecodeError:
+            data = {}
+
+        dataset_code = request.path_params.get('dataset_code') or data.get('dataset_code')
+        dataset_id = request.path_params.get('dataset_id')
+        if not dataset_id:
+            dataset_id = data.get('dataset_id') or data.get('dataset_geid') or data.get('dataset_id_or_code')
+        if dataset_code:
+            dataset = await dataset_service_client.get_dataset_by_code(dataset_code)
+        else:
+            dataset = await dataset_service_client.get_dataset_by_id(dataset_id)
+        current_identity = await get_current_identity(request)
+        if await current_identity.can_access_dataset(dataset, project_service_client):
+            return
+
+        raise APIException(error_msg='Permission denied', status_code=EAPIResponseCode.forbidden.value)

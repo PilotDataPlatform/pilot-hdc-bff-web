@@ -7,8 +7,6 @@
 import logging
 from functools import lru_cache
 from typing import Any
-from typing import Dict
-from typing import Union
 
 from common import VaultClient
 from pydantic import BaseSettings
@@ -21,16 +19,16 @@ class VaultConfig(BaseSettings):
     APP_NAME: str = 'bff-web'
     CONFIG_CENTER_ENABLED: bool = False
 
-    VAULT_URL: Union[str, None]
-    VAULT_CRT: Union[str, None]
-    VAULT_TOKEN: Union[str, None]
+    VAULT_URL: str | None
+    VAULT_CRT: str | None
+    VAULT_TOKEN: str | None
 
     class Config:
         env_file = '.env'
         env_file_encoding = 'utf-8'
 
 
-def load_vault_settings(settings: BaseSettings) -> Dict[str, Any]:
+def load_vault_settings(settings: BaseSettings) -> dict[str, Any]:
     config = VaultConfig()
 
     if not config.CONFIG_CENTER_ENABLED:
@@ -54,6 +52,10 @@ class Settings(BaseSettings):
     SERVICE_CLIENT_TIMEOUT: int = 5
 
     PROJECT_NAME: str = 'Pilot'
+
+    STARTING_PROJECT_CODE: str = 'indoctestproject'
+
+    FORBIDDEN_CONTAINER_CODES: set[str] = {'platform'}
 
     CORE_ZONE_LABEL: str = 'Core'
     GREENROOM_ZONE_LABEL: str = 'Greenroom'
@@ -107,6 +109,8 @@ class Settings(BaseSettings):
     OPEN_TELEMETRY_ENABLED: bool = False
     OPEN_TELEMETRY_HOST: str = '127.0.0.1'
     OPEN_TELEMETRY_PORT: int = 6831
+
+    ENABLE_PROMETHEUS_METRICS: bool = False
 
     PACT_BROKER_URL: str = ''
 

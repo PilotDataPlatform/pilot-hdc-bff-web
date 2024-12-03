@@ -39,6 +39,10 @@ class CurrentUser(dict[str, Any]):
     def realm_roles(self) -> list[str]:
         return self['realm_roles']
 
+    @property
+    def is_platform_admin(self) -> bool:
+        return 'platform-admin' in self.realm_roles
+
     def get_project_roles(self) -> dict[str, str]:
         """Return the projects in which the user participates together with the role in that project."""
 
@@ -50,7 +54,8 @@ class CurrentUser(dict[str, Any]):
             for realm_role in self.realm_roles:
                 try:
                     project_code, project_role = realm_role.split('-', 1)
-                except ValueError:
+                    assert project_code != 'platform'  # Edge case for "platform-admin" role
+                except (ValueError, AssertionError):
                     continue
 
                 if project_role in project_related_roles:
@@ -77,3 +82,11 @@ class CurrentUser(dict[str, Any]):
         user_project_ids = await project_service_client.convert_project_codes_into_ids(user_project_codes)
 
         return UUID(dataset_project_id) in user_project_ids
+
+    def can_access_project(self, project_code: str) -> bool:
+        """Return true if the user has permission to access the project."""
+
+        if self.is_platform_admin:
+            return True
+
+        return project_code in self.get_project_roles().keys()
