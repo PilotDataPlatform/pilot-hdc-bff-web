@@ -5,16 +5,23 @@
 # You may not use this file except in compliance with the License.
 
 from collections.abc import Mapping
+from typing import Annotated
 from typing import ClassVar
+from typing import Literal
+from uuid import UUID
+from uuid import uuid4
 
 import fastapi
 import httpx
 import requests
+from common import ProjectNotFoundException
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import Header
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
+from pydantic import BaseModel
 from starlette.datastructures import MultiDict
 
 from app.auth import jwt_required
@@ -24,6 +31,7 @@ from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
 from models.api_response import EAPIResponseCode
+from models.user_type import EUserRole
 from services.dataset.client import DatasetServiceClient
 from services.dataset.client import get_dataset_service_client
 from services.permissions_service.decorators import DatasetPermission
@@ -224,9 +232,14 @@ class ListDatasets(ProxyPass):
             modified_parameters['creator'] = self.current_user.username
 
         if project_code_parameter:
-            user_projects = list(self.current_user.get_project_roles().keys())
-            if project_code_parameter not in user_projects:
+            user_project_roles = self.current_user.get_project_roles()
+
+            if project_code_parameter not in user_project_roles:
                 raise APIException(error_msg='Permission denied', status_code=EAPIResponseCode.forbidden.value)
+
+            project_role = user_project_roles[project_code_parameter]
+            if project_role != EUserRole.admin.name:
+                modified_parameters['creator'] = self.current_user.username
 
             project = await self.project_service_client.get(code=project_code_parameter)
             modified_parameters['project_id'] = project.id
@@ -235,6 +248,148 @@ class ListDatasets(ProxyPass):
 
     async def proxy_request(self, parameters: MultiDict[str]) -> httpx.Response:
         return await self.dataset_service_client.list_datasets(parameters)
+
+
+@cbv.cbv(router)
+class ListDatasetVersionSharingRequests(ProxyPass):
+    request_allowed_parameters: ClassVar[set[str]] = {
+        'project_code',
+        'sort_by',
+        'sort_order',
+        'page',
+        'page_size',
+    }
+    response_allowed_headers: ClassVar[set[str]] = {'Content-Type'}
+
+    current_user: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
+    dataset_service_client: DatasetServiceClient = Depends(get_dataset_service_client)
+
+    @router.get(
+        '/dataset-version-sharing-requests/', summary='List all Dataset Version Sharing Requests user can access.'
+    )
+    async def __call__(self, request: Request) -> fastapi.Response:
+        return await super().__call__(request)
+
+    async def modify_request_parameters(self, parameters: MultiDict[str]) -> MultiDict[str]:
+        modified_parameters = MultiDict(parameters)
+
+        user_projects_with_admin_role = self.current_user.get_projects_with_role('admin')
+        project_code_parameter = modified_parameters.get('project_code', None)
+        if project_code_parameter not in user_projects_with_admin_role:
+            raise APIException(error_msg='Permission denied', status_code=EAPIResponseCode.forbidden.value)
+
+        return modified_parameters
+
+    async def proxy_request(self, parameters: MultiDict[str]) -> httpx.Response:
+        return await self.dataset_service_client.list_dataset_version_sharing_requests(parameters)
+
+    async def process_response(self, response: httpx.Response) -> fastapi.Response:
+        """Replace source project id with source project code in version sharing objects."""
+
+        await self.raise_for_response_status(response)
+
+        headers = await self.filter_response_headers(response.headers)
+
+        content = response.json()
+        for version_sharing_request in content['result']:
+            source_project = await self.project_service_client.get(id=version_sharing_request.pop('source_project_id'))
+            version_sharing_request['source_project_code'] = source_project.code
+
+        return JSONResponse(content=content, status_code=response.status_code, headers=headers)
+
+
+class CreateDatasetVersionSharingRequestBody(BaseModel):
+    version_id: UUID
+    project_code: str
+
+
+class UpdateDatasetVersionSharingRequestBody(BaseModel):
+    status: Literal['accepted', 'declined']
+
+
+@cbv.cbv(router)
+class DatasetVersionSharingRequest(ProxyPass):
+    response_allowed_headers: ClassVar[set[str]] = {'Content-Type'}
+
+    current_user: CurrentUser = Depends(jwt_required)
+    project_service_client: ProjectServiceClient = Depends(get_project_service_client)
+    dataset_service_client: DatasetServiceClient = Depends(get_dataset_service_client)
+
+    @router.post('/dataset-version-sharing-requests/', summary='Create Dataset Version Sharing Request')
+    async def post(self, body: CreateDatasetVersionSharingRequestBody) -> fastapi.Response:
+        try:
+            project = await self.project_service_client.get(code=body.project_code)
+            dataset_version = await self.dataset_service_client.get_dataset_version(body.version_id)
+            dataset = await self.dataset_service_client.get_dataset_by_id(dataset_version['dataset_id'])
+            dataset_source_project = await self.project_service_client.get(id=dataset['project_id'])
+        except ProjectNotFoundException:
+            raise APIException(error_msg='Project not found', status_code=EAPIResponseCode.not_found.value)
+
+        if dataset['project_id'] == project.id:
+            raise APIException(
+                error_msg='Sharing is not permitted within the same project',
+                status_code=EAPIResponseCode.conflict.value,
+            )
+
+        user_projects_with_admin_role = self.current_user.get_projects_with_role('admin')
+        if dataset_source_project.code not in user_projects_with_admin_role:
+            raise APIException(error_msg='Permission denied', status_code=EAPIResponseCode.forbidden.value)
+
+        raw_response = await self.dataset_service_client.create_dataset_version_sharing_request(
+            body.version_id, project.code, self.current_user.username
+        )
+        response = await self.process_response(raw_response)
+
+        return response
+
+    @router.patch(
+        '/dataset-version-sharing-requests/{version_sharing_request_id}',
+        summary='Update Dataset Version Sharing Request',
+    )
+    async def patch(
+        self,
+        version_sharing_request_id: UUID,
+        body: UpdateDatasetVersionSharingRequestBody,
+        session_id: Annotated[str | None, Header()] = None,
+        authorization: Annotated[str | None, Header()] = None,
+    ):
+        response = await self.dataset_service_client.get_dataset_version_sharing_request(version_sharing_request_id)
+        response.raise_for_status()
+        existing_version_sharing_request = response.json()
+
+        if existing_version_sharing_request['status'] in ('accepted', 'declined'):
+            raise APIException(error_msg='Version sharing request is already processed', status_code=400)
+
+        user_projects_with_admin_role = self.current_user.get_projects_with_role('admin')
+        if existing_version_sharing_request['project_code'] not in user_projects_with_admin_role:
+            raise APIException(error_msg='Permission denied', status_code=EAPIResponseCode.forbidden.value)
+
+        is_accepted = body.status == 'accepted'
+
+        if is_accepted and (session_id is None or authorization is None):
+            raise APIException(error_msg='Missing required headers.', status_code=EAPIResponseCode.forbidden.value)
+
+        raw_response = await self.dataset_service_client.process_dataset_version_sharing_request(
+            version_sharing_request_id, self.current_user.username, body.status
+        )
+        await self.raise_for_response_status(raw_response)
+        version_sharing_request = raw_response.json()
+        source_project = await self.project_service_client.get(id=version_sharing_request.pop('source_project_id'))
+        version_sharing_request['source_project_code'] = source_project.code
+
+        if is_accepted:
+            job_id = str(uuid4())
+            response = await self.dataset_service_client.start_version_sharing_request(
+                version_sharing_request_id, job_id, session_id, authorization
+            )
+            response.raise_for_status()
+            logger.info(
+                f'Successfully started sharing a version sharing request "{version_sharing_request_id}" '
+                f'using job "{job_id}" in session "{session_id}".'
+            )
+
+        return JSONResponse(content=version_sharing_request, status_code=raw_response.status_code)
 
 
 @cbv.cbv(router)

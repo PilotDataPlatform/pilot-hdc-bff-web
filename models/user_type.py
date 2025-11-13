@@ -23,7 +23,7 @@ class EUserRole(Enum):
 
 
 def map_role_front_to_sys(role: str):
-    """return EUserRole Type."""
+    """Return EUserRole Type."""
     return {
         'site-admin': EUserRole.site_admin,
         'admin': EUserRole.admin,
@@ -36,7 +36,7 @@ def map_role_front_to_sys(role: str):
 
 
 def map_role_sys_to_front(role: EUserRole):
-    """return string."""
+    """Return string."""
     return {
         EUserRole.site_admin: 'site-admin',
         EUserRole.admin: 'admin',

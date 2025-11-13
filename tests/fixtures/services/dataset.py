@@ -66,5 +66,5 @@ def dataset_factory(fake, httpx_mock, settings) -> DatasetFactory:
 
 
 @pytest.fixture
-def dataset_service_client(settings) -> DatasetServiceClient:
-    return get_dataset_service_client(settings)
+def dataset_service_client(request_context, settings) -> DatasetServiceClient:
+    return get_dataset_service_client(request_context, settings)

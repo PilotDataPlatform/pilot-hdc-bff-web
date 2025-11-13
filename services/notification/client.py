@@ -4,9 +4,8 @@
 # Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
+from collections.abc import Mapping
 from typing import Any
-from typing import Dict
-from typing import Mapping
 from uuid import UUID
 
 from fastapi import Depends
@@ -45,7 +44,7 @@ class NotificationServiceClient:
 
         return response
 
-    async def get_all_notifications(self, params: Mapping[str, Any]) -> Dict[str, Any]:
+    async def get_all_notifications(self, params: Mapping[str, Any]) -> dict[str, Any]:
         """Query all notifications."""
 
         url = self.endpoint_v1 + '/all/notifications/'
@@ -53,7 +52,7 @@ class NotificationServiceClient:
 
         return response.json()
 
-    async def get_user_notifications(self, params: Mapping[str, Any]) -> Dict[str, Any]:
+    async def get_user_notifications(self, params: Mapping[str, Any]) -> dict[str, Any]:
         """Query user notifications."""
 
         url = self.endpoint_v1 + '/all/notifications/user'
@@ -61,7 +60,7 @@ class NotificationServiceClient:
 
         return response.json()
 
-    def replace_zone_labels(self, response: Dict[str, Any]) -> Dict[str, Any]:
+    def replace_zone_labels(self, response: dict[str, Any]) -> dict[str, Any]:
         """Replace zone numbers with string values in notifications response."""
 
         for notification in response['result']:
@@ -82,7 +81,7 @@ class NotificationServiceClient:
 
         return response
 
-    async def get_maintenance_announcement(self, announcement_id: UUID) -> Dict[str, Any]:
+    async def get_maintenance_announcement(self, announcement_id: UUID) -> dict[str, Any]:
         """Get maintenance announcement."""
 
         url = f'{self.endpoint_v2}/announcements/{announcement_id}'
@@ -90,7 +89,7 @@ class NotificationServiceClient:
 
         return response.json()
 
-    async def create_maintenance_announcement(self, json: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_maintenance_announcement(self, json: dict[str, Any]) -> dict[str, Any]:
         """Create maintenance announcement."""
 
         url = f'{self.endpoint_v2}/announcements/'
@@ -98,7 +97,7 @@ class NotificationServiceClient:
 
         return response.json()
 
-    async def update_maintenance_announcement(self, announcement_id: UUID, json: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_maintenance_announcement(self, announcement_id: UUID, json: dict[str, Any]) -> dict[str, Any]:
         """Update maintenance announcement."""
 
         url = f'{self.endpoint_v2}/announcements/{announcement_id}'

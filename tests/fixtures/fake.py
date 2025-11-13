@@ -24,7 +24,11 @@ class Faker(faker.Faker):
     def dataset_id(self) -> str:
         return self.uuid4()
 
+    def headers(self, elements: int) -> dict[str, str]:
+        headers = self.pydict(elements, value_types=(str,))
+        return {k.lower(): v for k, v in headers.items()}
+
 
 @pytest.fixture(scope='session')
 def fake() -> Faker:
-    yield Faker()
+    return Faker()

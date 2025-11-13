@@ -5,13 +5,15 @@
 # You may not use this file except in compliance with the License.
 
 import re
+from collections.abc import AsyncGenerator
 from uuid import uuid4
 
 import jwt
 import pytest
 import requests_mock
-from async_asgi_testclient import TestClient as TestAsyncClient
 from fastapi.testclient import TestClient
+from httpx import ASGITransport
+from httpx import AsyncClient
 from pytest_httpx import HTTPXMock
 from starlette.config import environ
 from testcontainers.redis import RedisContainer
@@ -90,10 +92,12 @@ def test_client(redis_uri):
 
 
 @pytest.fixture
-def test_async_client(redis_uri):
+async def test_async_client(redis_uri) -> AsyncGenerator[AsyncClient]:
     ConfigClass.REDIS_URL = redis_uri
     app = create_app()
-    return TestAsyncClient(app)
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url='https://bff') as client:
+        yield client
 
 
 @pytest.fixture
@@ -207,7 +211,7 @@ def has_contrib_file_permission(httpx_mock):
 def redis_uri():
     with RedisContainer(image=REDIS_DOCKER_IMAGE) as redis:
         host = redis.get_container_host_ip()
-        port = redis.get_exposed_port(redis.port_to_expose)
+        port = redis.get_exposed_port(redis.port)
         yield f'redis://{host}:{port}'
 
 
@@ -225,5 +229,7 @@ def non_mocked_hosts() -> list[str]:
 pytest_plugins = [
     'tests.fixtures.services.dataset',
     'tests.fixtures.services.project',
+    'tests.fixtures.bridge',
     'tests.fixtures.fake',
+    'tests.fixtures.request_context',
 ]

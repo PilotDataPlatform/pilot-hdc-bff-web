@@ -6,8 +6,6 @@
 
 from enum import Enum
 from typing import Any
-from typing import Dict
-from typing import Optional
 
 from fastapi import Query
 from pydantic import BaseModel
@@ -24,15 +22,18 @@ class NotificationType(str, Enum):
     PROJECT = 'project'
     MAINTENANCE = 'maintenance'
 
+    def __str__(self) -> str:
+        return self.value
+
 
 class NotificationFilterParameters(BaseModel):
     """Query parameters for notifications filtering."""
 
-    page: Optional[int] = Query(default=None)
-    page_size: Optional[int] = Query(default=None)
-    sort_by: Optional[str] = Query(default=None)
-    sort_order: Optional[str] = Query(default=None)
-    type: Optional[NotificationType] = Query(default=None)
+    page: int | None = Query(default=None)
+    page_size: int | None = Query(default=None)
+    sort_by: str | None = Query(default=None)
+    sort_order: str | None = Query(default=None)
+    type: NotificationType | None = Query(default=None)
 
     class Config:
         use_enum_values = True
@@ -43,7 +44,7 @@ class NotificationFilterParameters(BaseModel):
 
     async def to_notification_service_params(
         self, current_username: str, current_role: str, auth_service_client: AuthServiceClient
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         params = self.dict(exclude_none=True)
 
         if not self.is_type_specified:

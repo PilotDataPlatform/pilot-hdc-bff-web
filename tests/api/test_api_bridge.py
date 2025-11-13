@@ -9,7 +9,6 @@ from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
 from config import ConfigClass
-from services.bridge import get_bridge_service
 
 
 @pytest.mark.parametrize(
@@ -19,7 +18,7 @@ from services.bridge import get_bridge_service
         ('dataset', f'{ConfigClass.DATASET_SERVICE}datasets'),
     ],
 )
-async def test_add_visits_returns_success(entity, url, mocker, test_async_client, httpx_mock):
+async def test_add_visits_returns_success(entity, url, mocker, test_async_client, httpx_mock, bridge_service):
     mocker.patch('app.auth.get_current_identity', return_value={'username': 'admin'})
     httpx_mock.add_response(
         method='GET',
@@ -32,7 +31,6 @@ async def test_add_visits_returns_success(entity, url, mocker, test_async_client
     response = await test_async_client.post('/v1/visits', json=params)
     assert response.status_code == 200
     assert response.json() == {'code': 200, 'result': 'success'}
-    bridge_service = await get_bridge_service()
     code = (await bridge_service.REDIS.lrange(f'{entity}:admin:visits', 0, 1))[0]
     assert 'any' == code
     await bridge_service.REDIS.flushall()
@@ -87,7 +85,7 @@ async def test_add_visits_redis_error_returns_400(mocker, test_async_client, htt
 @pytest.mark.parametrize('missing_field,params', [('last', {'entity': 'project'}), ('entity', {'last': 1})])
 async def test_get_visits_returns_422_when_wrong_query_string(mocker, test_async_client, missing_field, params):
     mocker.patch('app.auth.get_current_identity', return_value={'username': 'admin'})
-    response = await test_async_client.get('/v1/visits', query_string=params)
+    response = await test_async_client.get('/v1/visits', params=params)
     assert response.json() == {
         'detail': [{'loc': ['query', missing_field], 'msg': 'field required', 'type': 'value_error.missing'}]
     }
@@ -98,7 +96,7 @@ async def test_get_visits_with_no_visits_returns_404(mocker, test_async_client):
     mocker.patch('app.auth.get_current_identity', return_value={'username': 'admin'})
     params = {'entity': 'project', 'last': 1}
 
-    response = await test_async_client.get('/v1/visits', query_string=params)
+    response = await test_async_client.get('/v1/visits', params=params)
     assert response.status_code == 200
     assert response.json() == {'code': 200, 'error_msg': '', 'num_of_pages': 1, 'page': 1, 'result': [], 'total': 1}
 
@@ -123,9 +121,8 @@ async def test_get_visits_with_no_visits_returns_404(mocker, test_async_client):
     ],
 )
 async def test_get_visits_with_returns_200(
-    mocker, test_async_client, httpx_mock, entity, url, service_response, api_response
+    mocker, test_async_client, httpx_mock, entity, url, service_response, api_response, bridge_service
 ):
-    bridge_service = await get_bridge_service()
     username = 'admin'
     redis_cli = await Redis.from_url(ConfigClass.REDIS_URL, decode_responses=True)
     for i in range(0, 3):
@@ -140,7 +137,7 @@ async def test_get_visits_with_returns_200(
     )
 
     params = {'entity': entity, 'last': 2}
-    response = await test_async_client.get('/v1/visits', query_string=params)
+    response = await test_async_client.get('/v1/visits', params=params)
     assert response.json() == api_response
     assert response.status_code == 200
     await bridge_service.REDIS.flushall()

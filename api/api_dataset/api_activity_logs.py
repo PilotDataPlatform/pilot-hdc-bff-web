@@ -8,6 +8,7 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from fastapi.responses import PlainTextResponse
 from fastapi_utils import cbv
 from starlette.datastructures import MultiDict
 
@@ -40,6 +41,7 @@ class ActivityLogs:
     )
     async def get(self, dataset_code: str, request: Request) -> JSONResponse:
         """Fetch activity logs of a dataset."""
+
         _res = APIResponse()
         logger.info(f'Call API for fetching logs for dataset: {dataset_code}')
 

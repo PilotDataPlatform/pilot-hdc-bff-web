@@ -5,7 +5,6 @@
 # You may not use this file except in compliance with the License.
 
 import json
-from typing import Union
 
 import jwt
 from fastapi import Request
@@ -54,7 +53,7 @@ async def set_cache(username, result):
     return False
 
 
-async def get_current_identity(request: Request) -> Union[CurrentUser, None]:
+async def get_current_identity(request: Request) -> CurrentUser | None:
     token = await get_token(request)
     payload = jwt.decode(token, options={'verify_signature': False})
     username: str = payload.get('preferred_username')

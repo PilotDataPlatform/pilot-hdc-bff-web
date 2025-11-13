@@ -5,7 +5,6 @@
 # You may not use this file except in compliance with the License.
 
 import json
-from typing import List
 
 import httpx
 import requests
@@ -18,7 +17,7 @@ class SrvEmail(metaclass=MetaService):
     def send(
         self,
         subject,
-        receiver: List[str],
+        receiver: list[str],
         content=None,
         msg_type='plain',
         attachments=None,
@@ -50,7 +49,7 @@ class SrvEmail(metaclass=MetaService):
     async def async_send(
         self,
         subject,
-        receiver: List[str],
+        receiver: list[str],
         content=None,
         msg_type='plain',
         attachments=None,

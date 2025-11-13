@@ -13,6 +13,7 @@ from fastapi_utils import cbv
 from httpx import AsyncClient
 
 from app.auth import jwt_required
+from app.components.request.context import RequestContextDependency
 from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
@@ -85,14 +86,12 @@ class DownloadPre:
         summary='pre-download for dataset',
         dependencies=[Depends(DatasetPermission())],
     )
-    async def get(self, dataset_id: str, request: Request):
+    async def get(self, dataset_id: str, request: Request, request_context: RequestContextDependency):
         api_response = APIResponse()
         try:
-            response = requests.get(
+            response = await request_context.client.get(
                 ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/download/pre',
                 params=request.query_params,
-                headers=request.headers,
-                timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT,
             )
         except Exception as e:
             logger.info(f'Error calling dataset service: {e}')

@@ -4,7 +4,6 @@
 # Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
-import requests
 from common import has_file_permission
 from fastapi import APIRouter
 from fastapi import Depends
@@ -13,6 +12,7 @@ from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 
 from app.auth import jwt_required
+from app.components.request.context import RequestContextDependency
 from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
@@ -37,7 +37,7 @@ class Download:
         '/download/pre',
         summary='Start a file or folder download',
     )
-    async def post(self, request: Request):  # noqa: C901
+    async def post(self, request: Request, request_context: RequestContextDependency):  # noqa: C901
         api_response = APIResponse()
         payload = await request.json()
         zone = 'core'
@@ -77,18 +77,14 @@ class Download:
 
         try:
             if zone == 'core':
-                response = requests.post(
+                response = await request_context.client.post(
                     ConfigClass.DOWNLOAD_SERVICE_CORE_V2 + 'download/pre/',
                     json=payload,
-                    headers=request.headers,
-                    timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT,
                 )
             else:
-                response = requests.post(
+                response = await request_context.client.post(
                     ConfigClass.DOWNLOAD_SERVICE_GR_V2 + 'download/pre/',
                     json=payload,
-                    headers=request.headers,
-                    timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT,
                 )
             return JSONResponse(content=response.json(), status_code=response.status_code)
         except Exception as e:
@@ -108,7 +104,7 @@ class DatasetDownload:
         '/dataset/download/pre',
         summary='Start a file or folder download in a dataset',
     )
-    async def post(self, request: Request):
+    async def post(self, request: Request, request_context: RequestContextDependency):
         api_response = APIResponse()
         payload = await request.json()
         if 'dataset_code' not in payload:
@@ -117,21 +113,16 @@ class DatasetDownload:
             api_response.set_error_msg('Missing required field dataset_code')
             return api_response.json_response()
 
-        logger.error('test here for the proxy')
-
         dataset_node = await self.dataset_service_client.get_dataset_by_code(payload.get('dataset_code'))
         if not await self.current_identity.can_access_dataset(dataset_node, self.project_service_client):
             api_response.set_code(EAPIResponseCode.forbidden)
             api_response.set_result('Permission denied')
             return api_response.json_response()
 
-        logger.error('test here for the proxy')
         try:
-            response = requests.post(
+            response = await request_context.client.post(
                 ConfigClass.DOWNLOAD_SERVICE_CORE_V2 + 'dataset/download/pre',
                 json=payload,
-                headers=request.headers,
-                timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT,
             )
             return JSONResponse(content=response.json(), status_code=response.status_code)
         except Exception as e:

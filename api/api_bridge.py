@@ -4,6 +4,8 @@
 # Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
+from typing import Annotated
+
 import httpx
 from fastapi import APIRouter
 from fastapi import Depends
@@ -19,6 +21,7 @@ from models.api_response import EAPIResponseCode
 from models.bridge import AddVisits
 from models.bridge import AddVisitsResponse
 from models.bridge import GetRecentVisits
+from services.bridge import BridgeService
 from services.bridge import get_bridge_service
 
 router = APIRouter(tags=['Bridge'])
@@ -30,8 +33,7 @@ class Bridge:
     current_identity: CurrentUser = Depends(jwt_required)
 
     @router.post('/visits', summary='Compute one visit to the user from JWT', response_model=AddVisitsResponse)
-    async def add_visit(self, data: AddVisits):
-        bridge_service = await get_bridge_service()
+    async def add_visit(self, bridge_service: Annotated[BridgeService, Depends(get_bridge_service)], data: AddVisits):
         username = self.current_identity['username']
         response = AddVisitsResponse(result='success', code=EAPIResponseCode.success.value)
 
@@ -39,8 +41,9 @@ class Bridge:
         return JSONResponse(content=response.dict(), status_code=response.code)
 
     @router.get('/visits', summary='get JWT user last visits')
-    async def get_visit(self, params: GetRecentVisits = Depends()):
-        bridge_service = await get_bridge_service()
+    async def get_visit(
+        self, bridge_service: Annotated[BridgeService, Depends(get_bridge_service)], params: GetRecentVisits = Depends()
+    ):
         username = self.current_identity['username']
         entity = params.entity
         last_codes = await bridge_service.get_visits(params.entity, username, params.last)
