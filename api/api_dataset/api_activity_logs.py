@@ -8,7 +8,6 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from fastapi.responses import PlainTextResponse
 from fastapi_utils import cbv
 from starlette.datastructures import MultiDict
 
