@@ -18,6 +18,7 @@ jobs:
     uses: PilotDataPlatform/pilot-hdc-ci-tools/.github/workflows/run_tests.yml@main
     with:
       min_coverage_percent: 60
+      docker_login: true
     secrets: inherit
 
   build_and_publish_hdc:
