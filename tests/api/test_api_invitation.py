@@ -13,7 +13,7 @@ LIST_RESULT = {
         {
             'id': str(uuid.uuid4()),
             'invitation_code': str(uuid.uuid4()),
-            'email': str('test@test.com'),
+            'email': 'test@test.com',
             'status': 'sent',
         }
     ]

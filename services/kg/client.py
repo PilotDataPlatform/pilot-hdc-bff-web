@@ -4,11 +4,9 @@
 # Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
+from collections.abc import Mapping
 from enum import Enum
 from typing import Any
-from typing import Dict
-from typing import Mapping
-from typing import Optional
 
 from fastapi import Depends
 from httpx import AsyncClient
@@ -55,7 +53,7 @@ class KGServiceClient:
         self.endpoint = endpoint + '/v1'
         self.client = AsyncClient(timeout=1000)
 
-    async def _get(self, url: str, params: Mapping[str, Any], headers: Optional[dict[str, Any]] = None) -> Response:
+    async def _get(self, url: str, params: Mapping[str, Any], headers: dict[str, Any] | None = None) -> Response:
         logger.info(f'Calling kg integration service {url} with query params: {params}')
 
         try:
@@ -69,7 +67,7 @@ class KGServiceClient:
         return response
 
     async def _post(
-        self, url: str, params: Mapping[str, Any], json: Dict[str, Any], headers: Optional[dict[str, Any]] = None
+        self, url: str, params: Mapping[str, Any], json: dict[str, Any], headers: dict[str, Any] | None = None
     ) -> Response:
         logger.info(f'Calling kg integration service {url} with query params: {params} and body: {json}')
 
@@ -84,7 +82,7 @@ class KGServiceClient:
         return response
 
     async def _put(
-        self, url: str, params: Mapping[str, Any], json: Dict[str, Any], headers: Optional[dict[str, Any]] = None
+        self, url: str, params: Mapping[str, Any], json: dict[str, Any], headers: dict[str, Any] | None = None
     ) -> Response:
         logger.info(f'Calling kg integration service {url} with query params: {params} and body: {json}')
 
@@ -106,7 +104,7 @@ class KGServiceClient:
 
         return response
 
-    async def check_existing_spaces(self, json: Dict[str, Any], **kwargs) -> Response:
+    async def check_existing_spaces(self, json: dict[str, Any], **kwargs) -> Response:
         """List available spaces."""
 
         url = f'{self.endpoint}/spaces/'
@@ -154,7 +152,7 @@ class KGServiceClient:
 
         return response
 
-    async def check_existing_metadata(self, json: Dict[str, Any], **kwargs) -> Response:
+    async def check_existing_metadata(self, json: dict[str, Any], **kwargs) -> Response:
         """List all available metadata for given parameters."""
 
         url = f'{self.endpoint}/metadata/'
@@ -170,7 +168,7 @@ class KGServiceClient:
 
         return response
 
-    async def upload_metadata(self, json: Dict[str, Any], **kwargs) -> Response:
+    async def upload_metadata(self, json: dict[str, Any], **kwargs) -> Response:
         """Upload metadata to KG."""
 
         url = f'{self.endpoint}/metadata/upload'
@@ -187,18 +185,34 @@ class KGServiceClient:
         return response
 
     async def refresh_metadata_from_kg(self, metadata_id: str, **kwargs) -> Response:
-        """Upload metadata to KG."""
+        """Refresh metadata from KG."""
 
         url = f'{self.endpoint}/metadata/refresh/{metadata_id}'
         response = await self._get(url, **kwargs)
 
         return response
 
-    async def update_metadata(self, metadata_id: str, json: Dict[str, Any], **kwargs) -> Response:
+    async def bulk_refresh_metadata_from_kg(self, dataset_id: str, **kwargs) -> Response:
+        """Bulk refresh metadata from KG."""
+
+        url = f'{self.endpoint}/metadata/refresh/dataset/{dataset_id}'
+        response = await self._get(url, **kwargs)
+
+        return response
+
+    async def update_metadata(self, metadata_id: str, json: dict[str, Any], **kwargs) -> Response:
         """Update metadata on KG."""
 
         url = f'{self.endpoint}/metadata/update/{metadata_id}'
         response = await self._put(url, json=json, **kwargs)
+
+        return response
+
+    async def bulk_update_metadata(self, dataset_id: str, **kwargs) -> Response:
+        """Bulk update metadata on KG."""
+
+        url = f'{self.endpoint}/metadata/update/dataset/{dataset_id}'
+        response = await self._put(url, json={}, **kwargs)
 
         return response
 

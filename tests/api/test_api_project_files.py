@@ -5,7 +5,6 @@
 # You may not use this file except in compliance with the License.
 
 import re
-from typing import Union
 
 import pytest
 
@@ -14,7 +13,7 @@ from config import ConfigClass
 
 @pytest.fixture
 def mock_metadata_item():
-    def _mock_metadata_item(zone: Union[int, str]):
+    def _mock_metadata_item(zone: int | str):
         return {
             'zone': zone,
         }
@@ -63,9 +62,7 @@ async def test_search_replaces_zone_numbers_in_query_params_with_string_values(
 
     headers = {'Authorization': ''}
     params = {'zone': ConfigClass.CORE_ZONE_LABEL}
-    response = await test_async_client.get(
-        f'/v1/project-files/{project.code}/search', headers=headers, query_string=params
-    )
+    response = await test_async_client.get(f'/v1/project-files/{project.code}/search', headers=headers, params=params)
 
     assert response.status_code == 200
 
@@ -102,9 +99,7 @@ async def test_search_overrides_search_service_query_params_admin(
     )
 
     headers = {'Authorization': ''}
-    response = await test_async_client.get(
-        f'/v1/project-files/{project.code}/search', headers=headers, query_string=params
-    )
+    response = await test_async_client.get(f'/v1/project-files/{project.code}/search', headers=headers, params=params)
 
     httpx_mock.reset(False)
     assert response.status_code == 200
@@ -164,9 +159,7 @@ async def test_search_overrides_search_service_query_params_collab(
     )
 
     headers = {'Authorization': ''}
-    response = await test_async_client.get(
-        f'/v1/project-files/{project.code}/search', headers=headers, query_string=params
-    )
+    response = await test_async_client.get(f'/v1/project-files/{project.code}/search', headers=headers, params=params)
 
     httpx_mock.reset(False)
     assert response.status_code == 200
@@ -216,9 +209,7 @@ async def test_search_overrides_search_service_query_params_contrib(
     )
 
     headers = {'Authorization': ''}
-    response = await test_async_client.get(
-        f'/v1/project-files/{project.code}/search', headers=headers, query_string=params
-    )
+    response = await test_async_client.get(f'/v1/project-files/{project.code}/search', headers=headers, params=params)
 
     httpx_mock.reset(False)
     assert response.status_code == 200

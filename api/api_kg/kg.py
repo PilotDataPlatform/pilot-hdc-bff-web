@@ -5,7 +5,6 @@
 # You may not use this file except in compliance with the License.
 
 from typing import Any
-from typing import Dict
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -40,7 +39,7 @@ async def list_spaces(
     summary='Check a list of spaces',
 )
 async def check_spaces(
-    request: Request, body: Dict[str, Any], kg_service_client: KGServiceClient = Depends(get_kg_service_client)
+    request: Request, body: dict[str, Any], kg_service_client: KGServiceClient = Depends(get_kg_service_client)
 ) -> JSONResponse:
     """List spaces for user."""
 
@@ -123,7 +122,7 @@ async def list_metadata(
     summary='Check a list of metadata',
 )
 async def check_metadata(
-    request: Request, body: Dict[str, Any], kg_service_client: KGServiceClient = Depends(get_kg_service_client)
+    request: Request, body: dict[str, Any], kg_service_client: KGServiceClient = Depends(get_kg_service_client)
 ) -> JSONResponse:
     """Check a list of metadata."""
     response = await kg_service_client.check_existing_metadata(json=body, params=MultiDict(request.query_params))
@@ -150,7 +149,7 @@ async def get_metadata(
     summary='Upload new metadata to KG',
 )
 async def upload_metadata(
-    request: Request, body: Dict[str, Any], kg_service_client: KGServiceClient = Depends(get_kg_service_client)
+    request: Request, body: dict[str, Any], kg_service_client: KGServiceClient = Depends(get_kg_service_client)
 ) -> JSONResponse:
     """Upload new metadata to KG space."""
     headers = {'Authorization': request.headers.get('Authorization')}
@@ -193,6 +192,22 @@ async def refresh_metadata_from_kg(
     return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
+@router.get(
+    '/kg/metadata/refresh/dataset/{dataset_id}',
+    summary='Refresh metadata from KG',
+)
+async def bulk_refresh_metadata_from_kg(
+    request: Request,
+    dataset_id: str,
+    kg_service_client: KGServiceClient = Depends(get_kg_service_client),
+) -> JSONResponse:
+    headers = {'Authorization': request.headers.get('Authorization')}
+    response = await kg_service_client.bulk_refresh_metadata_from_kg(
+        dataset_id=dataset_id, params=MultiDict(request.query_params), headers=headers
+    )
+    return JSONResponse(content=response.json(), status_code=response.status_code)
+
+
 @router.put(
     '/kg/metadata/update/{metadata_id}',
     summary='Update existing metadata on KG',
@@ -200,13 +215,30 @@ async def refresh_metadata_from_kg(
 async def update_metadata(
     request: Request,
     metadata_id: str,
-    body: Dict[str, Any],
+    body: dict[str, Any],
     kg_service_client: KGServiceClient = Depends(get_kg_service_client),
 ) -> JSONResponse:
     """Update existing metadata or upload a new instance to KG."""
     headers = {'Authorization': request.headers.get('Authorization')}
     response = await kg_service_client.update_metadata(
         metadata_id=metadata_id, json=body, params=MultiDict(request.query_params), headers=headers
+    )
+    return JSONResponse(content=response.json(), status_code=response.status_code)
+
+
+@router.put(
+    '/kg/metadata/update/dataset/{dataset_id}',
+    summary='Bulk update existing metadata on KG',
+)
+async def bulk_update_metadata(
+    request: Request,
+    dataset_id: str,
+    kg_service_client: KGServiceClient = Depends(get_kg_service_client),
+) -> JSONResponse:
+    """Update existing metadata or upload a new instance to KG."""
+    headers = {'Authorization': request.headers.get('Authorization')}
+    response = await kg_service_client.bulk_update_metadata(
+        dataset_id=dataset_id, params=MultiDict(request.query_params), headers=headers
     )
     return JSONResponse(content=response.json(), status_code=response.status_code)
 

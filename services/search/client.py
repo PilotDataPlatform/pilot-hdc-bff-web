@@ -4,9 +4,8 @@
 # Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
+from collections.abc import Mapping
 from typing import Any
-from typing import Dict
-from typing import Mapping
 
 from fastapi import Depends
 from httpx import AsyncClient
@@ -41,7 +40,7 @@ class SearchServiceClient:
 
         return response
 
-    async def get_metadata_items(self, params: Mapping[str, Any]) -> Dict[str, Any]:
+    async def get_metadata_items(self, params: Mapping[str, Any]) -> dict[str, Any]:
         """Query metadata items."""
 
         url = self.endpoint_v1 + '/metadata-items/'
@@ -49,7 +48,7 @@ class SearchServiceClient:
 
         return response.json()
 
-    async def get_dataset_activity_logs(self, params: Mapping[str, Any]) -> Dict[str, Any]:
+    async def get_dataset_activity_logs(self, params: Mapping[str, Any]) -> dict[str, Any]:
         """Query dataset activity logs."""
 
         url = self.endpoint_v1 + '/dataset-activity-logs/'
@@ -57,7 +56,7 @@ class SearchServiceClient:
 
         return response.json()
 
-    async def get_item_activity_logs(self, params: Mapping[str, Any]) -> Dict[str, Any]:
+    async def get_item_activity_logs(self, params: Mapping[str, Any]) -> dict[str, Any]:
         """Query item activity logs."""
 
         url = self.endpoint_v1 + '/item-activity-logs/'
@@ -65,14 +64,14 @@ class SearchServiceClient:
 
         return response.json()
 
-    async def get_project_size(self, project_code: str, params: Mapping[str, Any]) -> Dict[str, Any]:
+    async def get_project_size(self, project_code: str, params: Mapping[str, Any]) -> dict[str, Any]:
         """Get storage usage for a project."""
 
         url = self.endpoint_v1 + f'/project-files/{project_code}/size'
         response = await self._get(url, params)
         return response.json()
 
-    async def get_project_statistics(self, project_code: str, params: Mapping[str, Any]) -> Dict[str, Any]:
+    async def get_project_statistics(self, project_code: str, params: Mapping[str, Any]) -> dict[str, Any]:
         """Get files and transfer activity statistics for a project."""
 
         url = self.endpoint_v1 + f'/project-files/{project_code}/statistics'
@@ -80,7 +79,7 @@ class SearchServiceClient:
 
         return response.json()
 
-    async def get_project_activity(self, project_code: str, params: Mapping[str, Any]) -> Dict[str, Any]:
+    async def get_project_activity(self, project_code: str, params: Mapping[str, Any]) -> dict[str, Any]:
         """Get file activity statistic for a project."""
 
         url = self.endpoint_v1 + f'/project-files/{project_code}/activity'

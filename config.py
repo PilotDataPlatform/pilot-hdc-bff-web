@@ -6,36 +6,11 @@
 
 import logging
 from functools import lru_cache
-from typing import Any
+from typing import Annotated
 
-from common import VaultClient
+from fastapi import Depends
 from pydantic import BaseSettings
 from pydantic import Extra
-
-
-class VaultConfig(BaseSettings):
-    """Store vault related configuration."""
-
-    APP_NAME: str = 'bff-web'
-    CONFIG_CENTER_ENABLED: bool = False
-
-    VAULT_URL: str | None
-    VAULT_CRT: str | None
-    VAULT_TOKEN: str | None
-
-    class Config:
-        env_file = '.env'
-        env_file_encoding = 'utf-8'
-
-
-def load_vault_settings(settings: BaseSettings) -> dict[str, Any]:
-    config = VaultConfig()
-
-    if not config.CONFIG_CENTER_ENABLED:
-        return {}
-
-    client = VaultClient(config.VAULT_URL, config.VAULT_CRT, config.VAULT_TOKEN)
-    return client.get_from_vault(config.APP_NAME)
 
 
 class Settings(BaseSettings):
@@ -144,10 +119,6 @@ class Settings(BaseSettings):
         env_file_encoding = 'utf-8'
         extra = Extra.allow
 
-        @classmethod
-        def customise_sources(cls, init_settings, env_settings, file_secret_settings):
-            return init_settings, env_settings, load_vault_settings, file_secret_settings
-
 
 @lru_cache(1)
 def get_settings() -> Settings:
@@ -155,5 +126,7 @@ def get_settings() -> Settings:
     settings = settings.modify_values(settings)
     return settings
 
+
+SettingsDependency = Annotated[Settings, Depends(get_settings)]
 
 ConfigClass = get_settings()

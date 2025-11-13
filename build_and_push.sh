@@ -32,7 +32,7 @@ VERSION=$(poetry version -s)
 if [ -z "$VERSION" ]; then
     echo "Please provide the portal version to use."
     exit 1
-fi 
+fi
 
 # Exit with error if TAG_MESSAGE is empty
 if [ -z "$TAG_MESSAGE" ]; then
@@ -60,5 +60,5 @@ docker build --tag $DOCKER_TAG --platform=linux/amd64 .
 
 docker push $DOCKER_TAG
 
-git tag -a $VERSION -m "$TAG_MESSAGE" 
+git tag -a $VERSION -m "$TAG_MESSAGE"
 git push origin $VERSION

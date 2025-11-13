@@ -114,9 +114,9 @@ class FileMeta:
         if zone_num is not None:
             payload['zone'] = zone_num
         if name:
-            payload['name'] = (name.replace('%', '\%') + '%',)  # noqa: W605
+            payload['name'] = (name.replace('%', r'\%') + '%',)  # noqa: W605
         if owner:
-            payload['owner'] = (owner.replace('%', '\%') + '%',)  # noqa: W605
+            payload['owner'] = (owner.replace('%', r'\%') + '%',)  # noqa: W605
         if source_type == 'folder':
             if restore_path:
                 payload['restore_path'] = restore_path

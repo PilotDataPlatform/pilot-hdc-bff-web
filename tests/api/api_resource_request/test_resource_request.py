@@ -175,7 +175,7 @@ async def test_post_request_query_200(test_async_client, httpx_mock, jwt_token_a
 
     result = {'num_of_pages': 1, 'page': 0, 'total': 1, 'result': [RESOURCE_REQUEST]}
     url = ConfigClass.PROJECT_SERVICE + (
-        '/v1/resource-requests/?page=0&page_size=25&sort_by=requested_at&sort_order=asc&username='
+        '/v1/resource-requests/?page=0&page_size=25&sort_by=requested_at&sort_order=asc&username=&email=&project_code='
     )
     httpx_mock.add_response(method='GET', url=url, json=result, status_code=200)
 
@@ -192,7 +192,7 @@ async def test_post_request_query_filter_200(test_async_client, httpx_mock, jwt_
     result = {'num_of_pages': 1, 'page': 0, 'total': 1, 'result': [RESOURCE_REQUEST]}
     url = ConfigClass.PROJECT_SERVICE + (
         '/v1/resource-requests/?page=0&page_size=25&sort_by=requested_at'
-        '&sort_order=asc&username=test%25&email=a%40test.com%25'
+        '&sort_order=asc&username=test%25&email=a%40test.com%25&project_code='
     )
     httpx_mock.add_response(method='GET', url=url, json=result, status_code=200)
 
@@ -210,7 +210,7 @@ async def test_post_request_query_422(test_async_client, httpx_mock, jwt_token_a
 
     result = {'num_of_pages': 1, 'page': 0, 'total': 1, 'result': [RESOURCE_REQUEST]}
     url = ConfigClass.PROJECT_SERVICE + (
-        '/v1/resource-requests/?page=0&page_size=25&sort_by=requested_at&sort_order=asc&username='
+        '/v1/resource-requests/?page=0&page_size=25&sort_by=requested_at&sort_order=asc&username=&email=&project_code='
     )
     httpx_mock.add_response(method='GET', url=url, json=result, status_code=422)
 

@@ -4,12 +4,9 @@
 # Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
+from collections.abc import Mapping
 from json.decoder import JSONDecodeError
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Mapping
-from typing import Optional
 
 from fastapi import Depends
 from httpx import AsyncClient
@@ -48,7 +45,7 @@ class AuthServiceClient:
         return response
 
     async def _post(
-        self, url: str, params: Mapping[str, Any], json: Dict[str, Any], headers: Optional[dict[str, Any]] = None
+        self, url: str, params: Mapping[str, Any], json: dict[str, Any], headers: dict[str, Any] | None = None
     ) -> Response:
         logger.info(f'Calling auth service {url} with query params: {params} and body: {json}')
 
@@ -62,7 +59,7 @@ class AuthServiceClient:
 
         return response
 
-    async def get_project_codes_where_user_has_role(self, username: str) -> List[str]:
+    async def get_project_codes_where_user_has_role(self, username: str) -> list[str]:
         """Get list of project codes where the user has a role."""
 
         url = self.endpoint_v1 + '/admin/users/realm-roles'

@@ -67,7 +67,7 @@ async def test_user_notifications_with_project_type_calls_notification_service_w
 
     params = {'type': NotificationType.PROJECT}
     headers = {'Authorization': ''}
-    response = await test_async_client.get('/v1/user-notifications', query_string=params, headers=headers)
+    response = await test_async_client.get('/v1/user-notifications', params=params, headers=headers)
 
     assert response.status_code == 200
 
@@ -89,7 +89,7 @@ async def test_user_notifications_with_maintenance_type_calls_notification_servi
 
     params = {'type': NotificationType.MAINTENANCE}
     headers = {'Authorization': ''}
-    response = await test_async_client.get('/v1/user-notifications', query_string=params, headers=headers)
+    response = await test_async_client.get('/v1/user-notifications', params=params, headers=headers)
 
     assert response.status_code == 200
 
@@ -117,7 +117,7 @@ async def test_user_notifications_with_type_calls_notification_service_with_prop
 
     params = {'type': notification_type}
     headers = {'Authorization': ''}
-    response = await test_async_client.get('/v1/user-notifications', query_string=params, headers=headers)
+    response = await test_async_client.get('/v1/user-notifications', params=params, headers=headers)
 
     assert response.status_code == 200
 
@@ -160,7 +160,7 @@ async def test_user_notifications_replaces_zone_numbers_in_response_with_string_
 
     params = {'type': NotificationType.PIPELINE}
     headers = {'Authorization': ''}
-    response = await test_async_client.get('/v1/user-notifications', query_string=params, headers=headers)
+    response = await test_async_client.get('/v1/user-notifications', params=params, headers=headers)
 
     assert response.status_code == 200
 

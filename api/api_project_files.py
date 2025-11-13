@@ -4,10 +4,8 @@
 # Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
+from collections.abc import Mapping
 from typing import Any
-from typing import Dict
-from typing import Mapping
-from typing import Optional
 
 from common import has_permission
 from common.project.project_client import ProjectObject
@@ -46,7 +44,7 @@ def get_zone_int(zone: str) -> int:
     return ConfigClass.LABEL_ZONE_MAPPING[zone.lower()]
 
 
-def _replace_zone_labels_in_search_response(response: Dict[str, Any]) -> Dict[str, Any]:
+def _replace_zone_labels_in_search_response(response: dict[str, Any]) -> dict[str, Any]:
     """Replace zone numbers with string values."""
 
     result = response['result']
@@ -56,7 +54,7 @@ def _replace_zone_labels_in_search_response(response: Dict[str, Any]) -> Dict[st
     return response
 
 
-def _replace_zone_labels_in_size_response(response: Dict[str, Any]) -> Dict[str, Any]:
+def _replace_zone_labels_in_size_response(response: dict[str, Any]) -> dict[str, Any]:
     """Replace zone numbers with string values."""
     for dataset in response['data']['datasets']:
         dataset['label'] = get_zone_label(dataset['label'])
@@ -64,7 +62,7 @@ def _replace_zone_labels_in_size_response(response: Dict[str, Any]) -> Dict[str,
     return response
 
 
-def _add_file_stats_per_zone(zones: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+def _add_file_stats_per_zone(zones: dict[str, Any] | None) -> dict[str, Any]:
     stats = {
         'files': {'total_count': 0, 'total_size': 0, 'total_per_zone': {}},
         'activity': {'today_uploaded': 0, 'today_downloaded': 0},
@@ -81,7 +79,7 @@ def _add_file_stats_per_zone(zones: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     return stats
 
 
-def _compile_file_size_per_zone(zones: Dict[str, Any]) -> Dict[str, Any]:
+def _compile_file_size_per_zone(zones: dict[str, Any]) -> dict[str, Any]:
     compiled = {'data': {'labels': [], 'datasets': []}}
     for zone in zones:
         zone_data = zones[zone]
@@ -99,7 +97,7 @@ def _compile_file_size_per_zone(zones: Dict[str, Any]) -> Dict[str, Any]:
 
 async def compile_file_statistics_for_zone_and_role(
     request, search_service_client, current_identity, project_code
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     username = current_identity['username']
 
     params = MultiDict(request.query_params)
@@ -141,8 +139,8 @@ async def compile_file_statistics_for_zone_and_role(
 
 
 async def _ensure_datasets_in_size_response(
-    response: Dict[str, Any], project_code: str, current_identity
-) -> Dict[str, Any]:
+    response: dict[str, Any], project_code: str, current_identity
+) -> dict[str, Any]:
     """Replace empty datasets with zero values per zone when no entries are available."""
 
     if response['data']['datasets']:
@@ -166,7 +164,7 @@ async def _ensure_datasets_in_size_response(
 
 async def compile_file_size_for_zone_and_role(
     request, search_service_client, current_identity, project_code
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     params = MultiDict(request.query_params)
     size_result = {}
     username = current_identity['username']
@@ -210,7 +208,7 @@ async def get_project(
 
 
 async def get_params_for_current_identity(
-    request: Request, current_identity: Dict[str, Any], project_code: str
+    request: Request, current_identity: dict[str, Any], project_code: str
 ) -> Mapping[str, Any]:
     """Override search service query params depending on current user role."""
 

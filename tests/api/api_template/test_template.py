@@ -80,7 +80,7 @@ async def test_list_templates_admin_200(test_async_client, httpx_mock, jwt_token
 
     params = {'project_code': 'test_project'}
     headers = {'Authorization': ''}
-    response = await test_async_client.get('/v1/data/manifests', query_string=params, headers=headers)
+    response = await test_async_client.get('/v1/data/manifests', params=params, headers=headers)
     assert response.status_code == 200
 
 

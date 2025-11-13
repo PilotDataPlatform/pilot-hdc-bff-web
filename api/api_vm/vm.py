@@ -5,7 +5,6 @@
 # You may not use this file except in compliance with the License.
 
 from typing import Any
-from typing import Dict
 
 from fastapi import APIRouter
 from fastapi import Depends
@@ -43,7 +42,7 @@ async def find_user(
 )
 async def reset_password(
     request: Request,
-    body: Dict[str, Any],
+    body: dict[str, Any],
     current_identity: CurrentUser = Depends(jwt_required),
     auth_client: AuthServiceClient = Depends(get_auth_service_client),
 ) -> Response:

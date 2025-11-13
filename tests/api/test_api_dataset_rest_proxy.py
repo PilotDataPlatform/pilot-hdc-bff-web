@@ -21,7 +21,7 @@ async def test_list_datasets_with_creator_parameter_returns_200(mocker, test_asy
 
     headers = {'Authorization': ''}
     params = {'creator': 'any'}
-    response = await test_async_client.get('/v1/datasets/', headers=headers, query_string=params)
+    response = await test_async_client.get('/v1/datasets/', headers=headers, params=params)
 
     assert response.status_code == 200
 
@@ -39,7 +39,7 @@ async def test_list_datasets_with_creator_parameter_replaces_creator_value_with_
 
     headers = {'Authorization': ''}
     params = {'creator': fake.user_name()}
-    response = await test_async_client.get('/v1/datasets/', headers=headers, query_string=params)
+    response = await test_async_client.get('/v1/datasets/', headers=headers, params=params)
 
     assert response.status_code == 200
 
@@ -101,11 +101,14 @@ async def test_list_datasets_without_creator_parameter_adds_only_creator_paramet
 async def test_list_datasets_with_project_code_parameter_replaces_it_with_project_id_and_adds_creator_parameter(
     mocker, test_async_client, httpx_mock, fake, project_factory
 ):
-    """When current user has no admin role in the specified project code."""
+    """When current user has no admin role in the specified project code but has admin roles in other projects."""
 
     username = fake.user_name()
     project = project_factory.mock_retrieval_by_code()
-    realm_roles = [f'{project.code}-{EUserRole.contributor.name}']
+    realm_roles = [
+        f'{project.code}-{EUserRole.contributor.name}',
+        f'{fake.project_code()}-{EUserRole.admin.name}',
+    ]
     mocker.patch(
         'app.auth.get_current_identity', return_value=CurrentUser({'username': username, 'realm_roles': realm_roles})
     )
@@ -117,7 +120,31 @@ async def test_list_datasets_with_project_code_parameter_replaces_it_with_projec
 
     headers = {'Authorization': ''}
     params = {'project_code': project.code}
-    response = await test_async_client.get('/v1/datasets/', headers=headers, query_string=params)
+    response = await test_async_client.get('/v1/datasets/', headers=headers, params=params)
+
+    assert response.status_code == 200
+
+
+async def test_list_datasets_with_project_code_parameter_replaces_it_with_project_id(
+    mocker, test_async_client, httpx_mock, fake, project_factory
+):
+    """When current user has an admin role in the specified project code."""
+
+    username = fake.user_name()
+    project = project_factory.mock_retrieval_by_code()
+    realm_roles = [f'{project.code}-{EUserRole.admin.name}']
+    mocker.patch(
+        'app.auth.get_current_identity', return_value=CurrentUser({'username': username, 'realm_roles': realm_roles})
+    )
+    httpx_mock.add_response(
+        method='GET',
+        url=f'{ConfigClass.DATASET_SERVICE}datasets/?project_id={project.id}',
+        json={},
+    )
+
+    headers = {'Authorization': ''}
+    params = {'project_code': project.code}
+    response = await test_async_client.get('/v1/datasets/', headers=headers, params=params)
 
     assert response.status_code == 200
 
@@ -133,7 +160,7 @@ async def test_list_datasets_with_project_code_parameter_returns_forbidden(mocke
 
     headers = {'Authorization': ''}
     params = {'project_code': fake.project_code()}
-    response = await test_async_client.get('/v1/datasets/', headers=headers, query_string=params)
+    response = await test_async_client.get('/v1/datasets/', headers=headers, params=params)
 
     assert response.status_code == 403
 
@@ -155,7 +182,7 @@ async def test_list_datasets_with_project_code_and_creator_parameters_replaces_p
 
     headers = {'Authorization': ''}
     params = {'creator': username, 'project_code': project.code}
-    response = await test_async_client.get('/v1/datasets/', headers=headers, query_string=params)
+    response = await test_async_client.get('/v1/datasets/', headers=headers, params=params)
 
     assert response.status_code == 200
 
@@ -168,8 +195,220 @@ async def test_list_datasets_returns_server_error_when_dataset_service_returns_u
     params = {'creator': 'any'}
     httpx_mock.add_response(method='GET', url=f'{ConfigClass.DATASET_SERVICE}datasets/?creator=admin', status_code=404)
 
-    response = await test_async_client.get('/v1/datasets/', headers=headers, query_string=params)
+    response = await test_async_client.get('/v1/datasets/', headers=headers, params=params)
     assert response.status_code == 500
+
+
+async def test_list_dataset_version_sharing_requests_with_project_code_parameter_returns_200(
+    mocker, test_async_client, httpx_mock, fake
+):
+    username = fake.user_name()
+    project_code = fake.project_code()
+    realm_roles = [f'{project_code}-{EUserRole.admin.name}']
+    mocker.patch(
+        'app.auth.get_current_identity', return_value=CurrentUser({'username': username, 'realm_roles': realm_roles})
+    )
+    httpx_mock.add_response(
+        method='GET',
+        url=f'{ConfigClass.DATASET_SERVICE}version-sharing-requests/?project_code={project_code}',
+        json={'result': []},
+    )
+
+    headers = {'Authorization': ''}
+    params = {'project_code': project_code}
+    response = await test_async_client.get('/v1/dataset-version-sharing-requests/', headers=headers, params=params)
+
+    assert response.status_code == 200
+
+
+async def test_list_dataset_version_sharing_requests_with_project_code_parameter_returns_forbidden(
+    mocker, test_async_client, fake
+):
+    """When current user doesn't have admin role in the specified project code."""
+
+    username = fake.user_name()
+    project_code = fake.project_code()
+    realm_roles = [f'{project_code}-{EUserRole.contributor.name}']
+    mocker.patch(
+        'app.auth.get_current_identity', return_value=CurrentUser({'username': username, 'realm_roles': realm_roles})
+    )
+
+    headers = {'Authorization': ''}
+    params = {'project_code': project_code}
+    response = await test_async_client.get('/v1/dataset-version-sharing-requests/', headers=headers, params=params)
+
+    assert response.status_code == 403
+
+
+async def test_create_dataset_version_sharing_request_returns_success(
+    mocker, test_async_client, httpx_mock, fake, project_factory, dataset_factory
+):
+    dataset_version_id = fake.uuid4(cast_to=str)
+    username = fake.user_name()
+    target_project = project_factory.mock_retrieval_by_code()
+    source_project = project_factory.mock_retrieval_by_id()
+    dataset = dataset_factory.mock_retrieval_by_id(dataset_factory.generate(project_id=source_project.id))
+    realm_roles = [f'{source_project.code}-{EUserRole.admin.name}']
+    mocker.patch(
+        'app.auth.get_current_identity', return_value=CurrentUser({'username': username, 'realm_roles': realm_roles})
+    )
+    httpx_mock.add_response(
+        method='GET',
+        url=f'{ConfigClass.DATASET_SERVICE}dataset/versions/{dataset_version_id}',
+        json={'dataset_id': str(dataset.id)},
+    )
+    httpx_mock.add_response(
+        method='POST',
+        url=f'{ConfigClass.DATASET_SERVICE}version-sharing-requests/',
+        json={},
+    )
+
+    headers = {'Authorization': ''}
+    body = {'version_id': dataset_version_id, 'project_code': target_project.code}
+    response = await test_async_client.post('/v1/dataset-version-sharing-requests/', headers=headers, json=body)
+
+    assert response.status_code == 200
+
+
+async def test_create_dataset_version_sharing_request_returns_not_found_when_target_project_does_not_exist(
+    mocker, test_async_client, httpx_mock, fake, project_factory, dataset_factory
+):
+    dataset_version_id = fake.uuid4(cast_to=str)
+    username = fake.user_name()
+    target_project_code = fake.project_code()
+    realm_roles = [f'{fake.project_code()}-{EUserRole.admin.name}']
+    mocker.patch(
+        'app.auth.get_current_identity', return_value=CurrentUser({'username': username, 'realm_roles': realm_roles})
+    )
+    httpx_mock.add_response(
+        method='GET',
+        url=f'{ConfigClass.PROJECT_SERVICE}/v1/projects/{target_project_code}',
+        status_code=404,
+    )
+
+    headers = {'Authorization': ''}
+    body = {'version_id': dataset_version_id, 'project_code': target_project_code}
+    response = await test_async_client.post('/v1/dataset-version-sharing-requests/', headers=headers, json=body)
+
+    assert response.status_code == 404
+    assert response.json()['error_msg'] == 'Project not found'
+
+
+async def test_create_dataset_version_sharing_request_returns_conflict_when_target_project_is_dataset_source_project(
+    mocker, test_async_client, httpx_mock, fake, project_factory, dataset_factory
+):
+    dataset_version_id = fake.uuid4(cast_to=str)
+    username = fake.user_name()
+    target_project = project_factory.mock_retrieval_by_code()
+    project_factory.mock_retrieval_by_id(target_project)
+    dataset = dataset_factory.mock_retrieval_by_id(dataset_factory.generate(project_id=target_project.id))
+    realm_roles = [f'{target_project.code}-{EUserRole.admin.name}']
+    mocker.patch(
+        'app.auth.get_current_identity', return_value=CurrentUser({'username': username, 'realm_roles': realm_roles})
+    )
+    httpx_mock.add_response(
+        method='GET',
+        url=f'{ConfigClass.DATASET_SERVICE}dataset/versions/{dataset_version_id}',
+        json={'dataset_id': str(dataset.id)},
+    )
+
+    headers = {'Authorization': ''}
+    body = {'version_id': dataset_version_id, 'project_code': target_project.code}
+    response = await test_async_client.post('/v1/dataset-version-sharing-requests/', headers=headers, json=body)
+
+    assert response.status_code == 409
+    assert response.json()['error_msg'] == 'Sharing is not permitted within the same project'
+
+
+async def test_create_dataset_version_sharing_request_returns_forbidden_for_user_without_admin_role_in_source_project(
+    mocker, test_async_client, httpx_mock, fake, project_factory, dataset_factory
+):
+    dataset_version_id = fake.uuid4(cast_to=str)
+    username = fake.user_name()
+    target_project = project_factory.mock_retrieval_by_code()
+    source_project = project_factory.mock_retrieval_by_id()
+    dataset = dataset_factory.mock_retrieval_by_id(dataset_factory.generate(project_id=source_project.id))
+    realm_roles = [f'{target_project.code}-{EUserRole.admin.name}']
+    mocker.patch(
+        'app.auth.get_current_identity', return_value=CurrentUser({'username': username, 'realm_roles': realm_roles})
+    )
+    httpx_mock.add_response(
+        method='GET',
+        url=f'{ConfigClass.DATASET_SERVICE}dataset/versions/{dataset_version_id}',
+        json={'dataset_id': str(dataset.id)},
+    )
+
+    headers = {'Authorization': ''}
+    body = {'version_id': dataset_version_id, 'project_code': target_project.code}
+    response = await test_async_client.post('/v1/dataset-version-sharing-requests/', headers=headers, json=body)
+
+    assert response.status_code == 403
+    assert response.json()['error_msg'] == 'Permission denied'
+
+
+async def test_update_dataset_version_sharing_request_with_declined_status_returns_success(
+    mocker, test_async_client, httpx_mock, fake, project_factory
+):
+    version_sharing_request_id = fake.uuid4()
+    username = fake.user_name()
+    project = project_factory.mock_retrieval_by_id()
+    realm_roles = [f'{project.code}-{EUserRole.admin.name}']
+    mocker.patch(
+        'app.auth.get_current_identity', return_value=CurrentUser({'username': username, 'realm_roles': realm_roles})
+    )
+    httpx_mock.add_response(
+        method='GET',
+        url=f'{ConfigClass.DATASET_SERVICE}version-sharing-requests/{version_sharing_request_id}',
+        json={'status': 'sent', 'project_code': project.code},
+    )
+    httpx_mock.add_response(
+        method='PATCH',
+        url=f'{ConfigClass.DATASET_SERVICE}version-sharing-requests/{version_sharing_request_id}',
+        json={'source_project_id': str(project.id)},
+    )
+
+    headers = {'Authorization': ''}
+    body = {'status': 'declined'}
+    response = await test_async_client.patch(
+        f'/v1/dataset-version-sharing-requests/{version_sharing_request_id}', headers=headers, json=body
+    )
+
+    assert response.status_code == 200
+
+
+async def test_update_dataset_version_sharing_request_with_accepted_status_returns_success(
+    mocker, test_async_client, httpx_mock, fake, project_factory
+):
+    version_sharing_request_id = fake.uuid4()
+    username = fake.user_name()
+    project = project_factory.mock_retrieval_by_id()
+    realm_roles = [f'{project.code}-{EUserRole.admin.name}']
+    mocker.patch(
+        'app.auth.get_current_identity', return_value=CurrentUser({'username': username, 'realm_roles': realm_roles})
+    )
+    httpx_mock.add_response(
+        method='GET',
+        url=f'{ConfigClass.DATASET_SERVICE}version-sharing-requests/{version_sharing_request_id}',
+        json={'status': 'sent', 'project_code': project.code},
+    )
+    httpx_mock.add_response(
+        method='PATCH',
+        url=f'{ConfigClass.DATASET_SERVICE}version-sharing-requests/{version_sharing_request_id}',
+        json={'source_project_id': str(project.id)},
+    )
+    httpx_mock.add_response(
+        method='POST',
+        url=f'{ConfigClass.DATASET_SERVICE}version-sharing-requests/{version_sharing_request_id}/start',
+        status_code=204,
+    )
+
+    headers = {'Authorization': '', 'Session-Id': fake.uuid4()}
+    body = {'status': 'accepted'}
+    response = await test_async_client.patch(
+        f'/v1/dataset-version-sharing-requests/{version_sharing_request_id}', headers=headers, json=body
+    )
+
+    assert response.status_code == 200
 
 
 async def test_datasets_get_dataset_by_identifier_should_return_200(
@@ -297,6 +536,6 @@ async def test_dataset_get_version_should_build_correct_url(mocker, test_async_c
         json={},
     )
 
-    response = await test_async_client.get(f'/v1/dataset/{dataset.id}/versions', headers=headers, query_string=params)
+    response = await test_async_client.get(f'/v1/dataset/{dataset.id}/versions', headers=headers, params=params)
     assert response.json() == {}
     assert response.status_code == 200

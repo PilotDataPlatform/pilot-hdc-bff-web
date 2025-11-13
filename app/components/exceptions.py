@@ -8,7 +8,6 @@ from abc import ABCMeta
 from abc import abstractmethod
 from http import HTTPStatus
 from typing import Any
-from typing import Dict
 
 
 class ServiceException(Exception, metaclass=ABCMeta):
@@ -37,7 +36,7 @@ class ServiceException(Exception, metaclass=ABCMeta):
 
         raise NotImplementedError
 
-    def dict(self) -> Dict[str, Any]:
+    def dict(self) -> dict[str, Any]:
         """Represent error as dictionary."""
 
         return {

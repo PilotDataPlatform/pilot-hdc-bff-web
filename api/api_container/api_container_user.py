@@ -5,7 +5,6 @@
 # You may not use this file except in compliance with the License.
 
 from typing import Any
-from typing import Dict
 
 from common.project.project_client import ProjectObject
 from fastapi import APIRouter
@@ -204,13 +203,13 @@ async def keycloak_user_role_update(operation: str, user_email: str, role: str, 
 
 
 def send_email_user(
-    user: Dict[str, Any],
+    user: dict[str, Any],
     project: ProjectObject,
     username: str,
     role: str,
     title: str,
     template: str,
-    current_identity: Dict[str, Any],
+    current_identity: dict[str, Any],
 ) -> None:
     try:
         email = user['email']
