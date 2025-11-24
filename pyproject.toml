@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "core"
-version = "2.2.69"
+version = "2.2.70"
 description = ""
 authors = ["Indoc Research"]
 
