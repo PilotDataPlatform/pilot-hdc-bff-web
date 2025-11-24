@@ -74,7 +74,7 @@ class FileDelete:
         headers = {'Authorization': request.headers.get('Authorization')}
         async with AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
             response = await client.delete(
-                ConfigClass.METADATA_SERVICE + 'itembatch/mark', json=payload, headers=headers
+                ConfigClass.METADATA_SERVICE + 'itembatch/mark', params=payload, headers=headers
             )
         if response.status_code != 200:
             error_msg = f'Error calling Meta service delete items: {response.json()}'
