@@ -69,15 +69,54 @@ class FileDelete:
         """Proxy for entity info file DELETE API, handles permission checks."""
         logger.info('Call API for deleting files in bulk')
 
-        data = await request.json()
-        payload = {'ids': data.get('ids', [])}
+        params = request.query_params
         headers = {'Authorization': request.headers.get('Authorization')}
         async with AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
-            response = await client.delete(
-                ConfigClass.METADATA_SERVICE + 'itembatch/mark', params=payload, headers=headers
-            )
+            response = await client.delete(ConfigClass.METADATA_SERVICE + 'items/mark/', params=params, headers=headers)
         if response.status_code != 200:
             error_msg = f'Error calling Meta service delete items: {response.json()}'
+            raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
+        result = response.json()
+        return JSONResponse(content=result, status_code=response.status_code)
+
+    @router.get(
+        '/files/delete',
+        summary='Get files marked for deletion in bulk',
+        dependencies=[Depends(PermissionsCheck('project', '*', 'view'))],
+    )
+    async def get(self, request: Request):
+        """Proxy for entity info file DELETE API, handles permission checks."""
+        logger.info('Call API for getting files marked for deletion in bulk')
+
+        headers = {'Authorization': request.headers.get('Authorization')}
+        async with AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
+            response = await client.get(ConfigClass.METADATA_SERVICE + 'items/mark/', headers=headers)
+        if response.status_code != 200:
+            error_msg = f'Error calling Meta service get marked items: {response.json()}'
+            raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
+        result = response.json()
+        return JSONResponse(content=result, status_code=response.status_code)
+
+
+@cbv.cbv(router)
+class FileRestore:
+    current_identity: CurrentUser = Depends(jwt_required)
+
+    @router.put(
+        '/files/restore',
+        summary='Restore file',
+        dependencies=[Depends(PermissionsCheck('project', '*', 'update'))],
+    )
+    async def put(self, request: Request):
+        """Proxy for entity info file RESTORE API, handles permission checks."""
+        logger.info('Call API for restoring files in bulk')
+
+        params = request.query_params
+        headers = {'Authorization': request.headers.get('Authorization')}
+        async with AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
+            response = await client.put(ConfigClass.METADATA_SERVICE + 'item/mark/', params=params, headers=headers)
+        if response.status_code != 200:
+            error_msg = f'Error calling Meta service restore items: {response.json()}'
             raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
         result = response.json()
         return JSONResponse(content=result, status_code=response.status_code)
