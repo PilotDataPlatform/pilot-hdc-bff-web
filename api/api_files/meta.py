@@ -82,7 +82,6 @@ class FileDelete:
     @router.get(
         '/files/delete',
         summary='Get files marked for deletion in bulk',
-        dependencies=[Depends(PermissionsCheck('project', '*', 'view'))],
     )
     async def get(self, request: Request):
         """Proxy for entity info file DELETE API, handles permission checks."""
