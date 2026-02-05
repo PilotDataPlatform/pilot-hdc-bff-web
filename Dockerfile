@@ -8,10 +8,6 @@ ENV PYTHONDONTWRITEBYTECODE=true \
 
 ENV PATH="${POETRY_HOME}/bin:${PATH}"
 
-RUN curl -o /usr/local/bin/mc https://dl.min.io/client/mc/release/linux-amd64/mc
-
-RUN chmod +x /usr/local/bin/mc
-
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
 COPY poetry.lock pyproject.toml ./
@@ -32,7 +28,4 @@ RUN chown -R app:app /app
 USER app
 
 ENV PATH="/app/.local/bin:${PATH}"
-ENV MINIO_USERNAME=minioadmin
-ENV MINIO_PASSWORD=minioadmin
-ENV MINIO_URL=http://minio.minio:9000
-CMD ["sh", "-c", "mc alias set minio $MINIO_URL $MINIO_USERNAME $MINIO_PASSWORD && python -m app"]
+CMD ["sh", "-c", "python -m app"]
