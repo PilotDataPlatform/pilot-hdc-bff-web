@@ -120,6 +120,25 @@ class FileRestore:
         result = response.json()
         return JSONResponse(content=result, status_code=response.status_code)
 
+    @router.patch(
+        '/files/bin/restore',
+        summary='Restore file from bin',
+        dependencies=[Depends(PermissionsCheck('project', '*', 'update'))],
+    )
+    async def patch(self, request: Request):
+        """Proxy for entity info file RESTORE API, handles permission checks."""
+        logger.info('Call API for restoring a file from bin')
+
+        params = request.query_params
+        headers = {'Authorization': request.headers.get('Authorization')}
+        async with AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
+            response = await client.patch(ConfigClass.METADATA_SERVICE + 'item/', params=params, headers=headers)
+        if response.status_code != 200:
+            error_msg = f'Error calling Meta service restore items: {response.json()}'
+            raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
+        result = response.json()
+        return JSONResponse(content=result, status_code=response.status_code)
+
 
 @cbv.cbv(router)
 class FileMeta:
