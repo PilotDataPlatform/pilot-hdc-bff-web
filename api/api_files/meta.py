@@ -123,7 +123,7 @@ class FileRestore:
     @router.patch(
         '/files/bin/restore',
         summary='Restore file from bin',
-        dependencies=[Depends(PermissionsCheck('project', '*', 'update'))],
+        dependencies=[Depends(PermissionsCheck('project', '*', 'view'))],
     )
     async def patch(self, request: Request):
         """Proxy for entity info file RESTORE API, handles permission checks."""
