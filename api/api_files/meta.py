@@ -61,20 +61,44 @@ class FileDelete:
     current_identity: CurrentUser = Depends(jwt_required)
 
     @router.delete(
-        '/files/delete',
-        summary='Delete files in bulk',
+        '/file/delete',
+        summary='Delete single file',
         dependencies=[Depends(PermissionsCheck('project', '*', 'update'))],
     )
     async def delete(self, request: Request):
         """Proxy for entity info file DELETE API, handles permission checks."""
-        logger.info('Call API for deleting files in bulk')
+        logger.info('Call API for deleting single file')
+
+        params = request.query_params
+        headers = {'Authorization': request.headers.get('Authorization')}
+        async with AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
+            response = await client.delete(ConfigClass.METADATA_SERVICE + 'item/', params=params, headers=headers)
+        if response.status_code != 200:
+            error_msg = f'Error calling Meta service delete items: {response.json()}'
+            raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
+        result = response.json()
+        return JSONResponse(content=result, status_code=response.status_code)
+
+
+@cbv.cbv(router)
+class FileMarkDelete:
+    current_identity: CurrentUser = Depends(jwt_required)
+
+    @router.delete(
+        '/files/delete',
+        summary='Mark files for deletion in bulk',
+        dependencies=[Depends(PermissionsCheck('project', '*', 'update'))],
+    )
+    async def delete(self, request: Request):
+        """Proxy for entity info file DELETE API, handles permission checks."""
+        logger.info('Call API for marking files for deletion in bulk')
 
         params = request.query_params
         headers = {'Authorization': request.headers.get('Authorization')}
         async with AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
             response = await client.delete(ConfigClass.METADATA_SERVICE + 'items/mark/', params=params, headers=headers)
         if response.status_code != 200:
-            error_msg = f'Error calling Meta service delete items: {response.json()}'
+            error_msg = f'Error calling Meta service mark for deletion items: {response.json()}'
             raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
         result = response.json()
         return JSONResponse(content=result, status_code=response.status_code)
