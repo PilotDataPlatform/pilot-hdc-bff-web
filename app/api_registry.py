@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from api import api_archive
 from api import api_auth
 from api import api_bridge
+from api import api_central_node
 from api import api_contact_us
 from api import api_dataset_rest_proxy
 from api import api_download
@@ -68,6 +69,7 @@ def api_registry(app: FastAPI) -> None:
     app.include_router(copy_request.router, prefix='/v1')
     app.include_router(data_manifest.router, prefix='/v1')
     app.include_router(api_dataset_rest_proxy.router, prefix='/v1')
+    app.include_router(api_central_node.router, prefix='/v1')
     app.include_router(api_folder.router, prefix='/v1')
     app.include_router(api_invitation.router, prefix='/v1')
     app.include_router(api_schema.router, prefix='/v1')
