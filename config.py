@@ -26,6 +26,9 @@ class Settings(BaseSettings):
 
     SERVICE_CLIENT_TIMEOUT: int = 5
 
+    CENTRAL_NODE_CLIENT_TIMEOUT_SECONDS: int = 30
+    CENTRAL_NODE_PULL_CLIENT_TIMEOUT_SECONDS: int = 300
+
     PROJECT_NAME: str = 'Pilot'
 
     STARTING_PROJECT_CODE: str = 'indoctestproject'
