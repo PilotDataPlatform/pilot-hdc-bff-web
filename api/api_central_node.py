@@ -60,7 +60,7 @@ class CopyToCentralNode(ProxyPass):
         async with httpx.AsyncClient(timeout=self.settings.CENTRAL_NODE_CLIENT_TIMEOUT_SECONDS) as client:
             raw_response = await client.post(
                 f'{self.settings.DATAOPS_SERVICE}central-node/upload',
-                data={
+                json={
                     'file_id': file_id,
                     'project_code': project_code,
                     'job_id': job_id,
