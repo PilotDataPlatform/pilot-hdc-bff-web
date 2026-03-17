@@ -20,6 +20,7 @@ from fastapi import Depends
 from fastapi import Header
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 from fastapi_utils import cbv
 from pydantic import BaseModel
 from starlette.datastructures import MultiDict
@@ -75,7 +76,6 @@ class Dataset:
     )
     async def delete(self, dataset_id_or_code: str, request: Request):
         url = f'{ConfigClass.DATASET_SERVICE}datasets/{dataset_id_or_code}'
-
         # Fetch dataset first to perform permission check, similar to the GET endpoint
         async with httpx.AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
             get_response = await client.get(url)
@@ -86,7 +86,11 @@ class Dataset:
 
         async with httpx.AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
             respon = await client.delete(url, headers=dict(request.headers))
-        return JSONResponse(content=respon.json(), status_code=respon.status_code)
+            if respon.status_code == 200:
+                logger.info(f'Successfully deleted dataset with id or code "{dataset_id_or_code}".')
+                return Response(status_code=respon.status_code)
+            else:
+                return JSONResponse(content={'err_msg': respon.content}, status_code=respon.status_code)
 
 
 @cbv.cbv(router)
