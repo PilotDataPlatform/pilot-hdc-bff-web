@@ -72,11 +72,20 @@ class Dataset:
     @router.delete(
         '/datasets/{dataset_id_or_code}',
         summary='Delete dataset by id or code',
-        dependencies=[Depends(DatasetPermission())],
     )
     async def delete(self, dataset_id_or_code: str, request: Request):
         url = f'{ConfigClass.DATASET_SERVICE}datasets/{dataset_id_or_code}'
-        respon = requests.delete(url, headers=request.headers, timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT)
+
+        # Fetch dataset first to perform permission check, similar to the GET endpoint
+        async with httpx.AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
+            get_response = await client.get(url)
+        if get_response.status_code == 200:
+            dataset = get_response.json()
+            if not await self.current_identity.can_access_dataset(dataset, self.project_service_client):
+                raise APIException(error_msg='Permission denied', status_code=EAPIResponseCode.forbidden.value)
+
+        async with httpx.AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
+            respon = await client.delete(url, headers=dict(request.headers))
         return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
 
