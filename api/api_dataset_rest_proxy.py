@@ -69,6 +69,16 @@ class Dataset:
         )
         return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
+    @router.delete(
+        '/datasets/{dataset_id_or_code}',
+        summary='Delete dataset by id or code',
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def delete(self, dataset_id_or_code: str, request: Request):
+        url = f'{ConfigClass.DATASET_SERVICE}datasets/{dataset_id_or_code}'
+        respon = requests.delete(url, headers=request.headers, timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT)
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
+
 
 @cbv.cbv(router)
 class RestfulPost:
