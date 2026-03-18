@@ -14,6 +14,7 @@ from fastapi_utils import cbv
 from httpx import AsyncClient
 from starlette.responses import Response
 
+from app.auth import invalidate_cache
 from app.logger import logger
 from config import ConfigClass
 from models.models_item import ItemStatus
@@ -213,6 +214,7 @@ class ADUserUpdate:
         await self.assign_user_role_ad(project.code + '-' + project_role, email=email, project_code=project.code)
         await self.bulk_create_folder(folder_name=username, project_code_list=[project.code])
         add_user_to_ad_group(email, project.code, logger)
+        await invalidate_cache(username)
         kg_role = KGRole(project_role)
         await self.kg_service_client.add_user_to_space(
             project_id=project.id, username=username, params={'role': kg_role.name}

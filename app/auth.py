@@ -30,6 +30,17 @@ async def get_token(request: Request):
     return token.split()[-1]
 
 
+async def invalidate_cache(username):
+    if ConfigClass.ENABLE_USER_CACHE:
+        try:
+            redis = await Redis.from_url(ConfigClass.REDIS_URL)
+            user_key = f'current_identity-{username}'
+            await redis.delete(user_key)
+        except Exception as e:
+            logger.error(f"Couldn't connect to redis, skipping cache: {e}")
+    return False
+
+
 async def check_cache(username):
     if ConfigClass.ENABLE_USER_CACHE:
         try:
