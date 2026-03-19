@@ -29,6 +29,17 @@ jobs:
       service_name: 'bff-web'
     secrets: inherit
 
+  update_gitops_hdc:
+    needs: [build_and_publish_hdc]
+    if: github.event_name != 'pull_request'
+    uses: PilotDataPlatform/pilot-hdc-ci-tools/.github/workflows/update_gitops_versions.yml@main
+    with:
+      service_key: 'bff'
+      image_tag: '${{ needs.build_and_publish_hdc.outputs.app_version }}'
+      yaml_path: '.base-chart-hdc.image.tag'
+      versions_file: 'clusters/dev/apps/bff/values.yaml'
+    secrets: inherit
+
   deploy_hdc:
     needs: [build_and_publish_hdc]
     uses: PilotDataPlatform/pilot-hdc-ci-tools/.github/workflows/trigger_deployment.yml@main
