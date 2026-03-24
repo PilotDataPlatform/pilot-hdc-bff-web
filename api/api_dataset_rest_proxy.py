@@ -83,6 +83,8 @@ class Dataset:
             dataset = get_response.json()
             if not await self.current_identity.can_access_dataset(dataset, self.project_service_client):
                 raise APIException(error_msg='Permission denied', status_code=EAPIResponseCode.forbidden.value)
+        else:
+            return JSONResponse(content={'err_msg': get_response.content}, status_code=get_response.status_code)
 
         async with httpx.AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
             respon = await client.delete(url, headers=dict(request.headers))
