@@ -246,7 +246,9 @@ class ResourceRequestComplete:
             logger.error(f'Error sending email: {e}')
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error sending email: {e}')
-            return api_response.json_response()
+            # TODO: revert this back to internal error after email issue is resolved
+            # currently set to allow password reset to proceed even if email fails
+            # return api_response.json_response()
         api_response.set_result(response.json())
         return api_response.json_response()
 
@@ -410,7 +412,9 @@ async def send_email(resource_request, project, user_role, username):
     except Exception as e:
         error_msg = f'Error sending email: {e}'
         logger.error(error_msg)
-        raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
+        # TODO: revert this back to internal error after email issue is resolved
+        # currently set to allow password reset to proceed even if email fails
+        # raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
 
 
 async def add_guacamole_user(username: str, container_code: str) -> None:
