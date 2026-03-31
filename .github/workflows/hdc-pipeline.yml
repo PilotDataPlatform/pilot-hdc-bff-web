@@ -39,10 +39,3 @@ jobs:
       yaml_path: '.base-chart-hdc.image.tag'
       versions_file: 'clusters/dev/apps/bff/values.yaml'
     secrets: inherit
-
-  deploy_hdc:
-    needs: [build_and_publish_hdc]
-    uses: PilotDataPlatform/pilot-hdc-ci-tools/.github/workflows/trigger_deployment.yml@main
-    with:
-      hdc_service_name: 'bff'
-    secrets: inherit
