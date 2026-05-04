@@ -71,6 +71,7 @@ async def reset_password(
         )
     except Exception as e:
         error_msg = f'Error sending email: {e}'
+        logger.error(error_msg)
         return Response(content=error_msg, status_code=EAPIResponseCode.internal_error.value)
 
     response = await auth_client.reset_password(data=body)
