@@ -164,9 +164,7 @@ class Register:
         except Exception as e:
             error_msg = f'Error sending email: {e}'
             logger.error(error_msg)
-            # TODO: revert this back to internal error after email issue is resolved
-            # currently set to allow password reset to proceed even if email fails
-            # raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
+            raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
 
         async with httpx.AsyncClient(timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT) as client:
             invite_response = await client.put(

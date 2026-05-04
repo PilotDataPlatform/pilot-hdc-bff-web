@@ -129,37 +129,32 @@ def test_post_invite_register_create_user_error_500(test_client, httpx_mock, moc
     assert response.status_code == 500
 
 
-# TODO: revert this back after email issue is resolved
-# def test_post_invite_register_email_error_500(test_client, httpx_mock, mocker):
-#     httpx_mock.add_response(
-#         method='POST',
-#         url=ConfigClass.AUTH_SERVICE + 'invitation-list',
-#         status_code=200,
-#         json=LIST_RESULT,
-#     )
-#
-#     httpx_mock.add_response(
-#         method='POST',
-#         url=ConfigClass.AUTH_SERVICE + 'admin/users',
-#         status_code=200,
-#         json={},
-#     )
-#
-#     mocker.patch(
-#       'services.notifier_services.email_service.SrvEmail.async_send',
-#       return_value={},
-#       side_effect=Exception
-#     )
-#     invite_code = LIST_RESULT['result'][0]['invitation_code']
-#
-#     payload = {
-#         'username': 'test',
-#         'password': '123',
-#         'first_name': 'Test',
-#         'last_name': 'Testing',
-#     }
-#     response = test_client.post(f'/v1/register/invitation/{invite_code}', json=payload)
-#     assert response.status_code == 500
+def test_post_invite_register_email_error_500(test_client, httpx_mock, mocker):
+    httpx_mock.add_response(
+        method='POST',
+        url=ConfigClass.AUTH_SERVICE + 'invitation-list',
+        status_code=200,
+        json=LIST_RESULT,
+    )
+
+    httpx_mock.add_response(
+        method='POST',
+        url=ConfigClass.AUTH_SERVICE + 'admin/users',
+        status_code=200,
+        json={},
+    )
+
+    mocker.patch('services.notifier_services.email_service.SrvEmail.async_send', return_value={}, side_effect=Exception)
+    invite_code = LIST_RESULT['result'][0]['invitation_code']
+
+    payload = {
+        'username': 'test',
+        'password': '123',
+        'first_name': 'Test',
+        'last_name': 'Testing',
+    }
+    response = test_client.post(f'/v1/register/invitation/{invite_code}', json=payload)
+    assert response.status_code == 500
 
 
 def test_post_invite_register_invite_update_error_500(test_client, httpx_mock, mocker):
