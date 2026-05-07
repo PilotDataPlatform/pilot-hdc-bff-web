@@ -4,6 +4,7 @@
 # Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
+import json
 from collections.abc import Mapping
 from typing import Annotated
 from typing import ClassVar
@@ -20,6 +21,7 @@ from fastapi import Depends
 from fastapi import Header
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from fastapi.responses import PlainTextResponse
 from fastapi.responses import Response
 from fastapi_utils import cbv
 from pydantic import BaseModel
@@ -28,6 +30,7 @@ from starlette.datastructures import MultiDict
 from app.auth import jwt_required
 from app.components.exceptions import APIException
 from app.components.exceptions import UnhandledException
+from app.components.request.context import RequestContextDependency
 from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
@@ -421,6 +424,10 @@ class DatasetVersionSharingRequest(ProxyPass):
 class DatasetFiles:
     current_identity: CurrentUser = Depends(jwt_required)
 
+    @router.get('/headers')
+    async def headers(self, request: Request) -> PlainTextResponse:
+        return PlainTextResponse(json.dumps(dict(request.headers), indent=4))
+
     @router.get(
         '/dataset/{dataset_id}/files',
         summary='List dataset files',
@@ -446,39 +453,33 @@ class DatasetFiles:
         summary='Move dataset files',
         dependencies=[Depends(DatasetPermission())],
     )
-    async def post(self, dataset_id: str, request: Request):
+    async def post(self, dataset_id: str, request: Request, request_context: RequestContextDependency):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
         payload_json = await request.json()
-        respon = requests.post(
-            url, json=payload_json, headers=request.headers, timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT
-        )
-        return JSONResponse(content=respon.json(), status_code=respon.status_code)
+        response = await request_context.client.post(url, json=payload_json)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.put(
         '/dataset/{dataset_id}/files',
         summary='Recieve the file list from a project and Copy them under the dataset',
         dependencies=[Depends(DatasetPermission())],
     )
-    async def put(self, dataset_id: str, request: Request):
+    async def put(self, dataset_id: str, request: Request, request_context: RequestContextDependency):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
         payload_json = await request.json()
-        respon = requests.put(
-            url, json=payload_json, headers=request.headers, timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT
-        )
-        return JSONResponse(content=respon.json(), status_code=respon.status_code)
+        response = await request_context.client.put(url, json=payload_json)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.delete(
         '/dataset/{dataset_id}/files',
         summary='Remove dataset files',
         dependencies=[Depends(DatasetPermission())],
     )
-    async def delete(self, dataset_id: str, request: Request):
+    async def delete(self, dataset_id: str, request: Request, request_context: RequestContextDependency):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
         payload_json = await request.json()
-        respon = requests.delete(
-            url, json=payload_json, headers=request.headers, timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT
-        )
-        return JSONResponse(content=respon.json(), status_code=respon.status_code)
+        response = await request_context.client.delete(url, json=payload_json)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 @cbv.cbv(router)
