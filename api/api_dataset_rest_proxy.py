@@ -4,6 +4,7 @@
 # Version 3.0 (the "License") available at https://www.gnu.org/licenses/agpl-3.0.en.html.
 # You may not use this file except in compliance with the License.
 
+import json
 from collections.abc import Mapping
 from typing import Annotated
 from typing import ClassVar
@@ -20,6 +21,7 @@ from fastapi import Depends
 from fastapi import Header
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from fastapi.responses import PlainTextResponse
 from fastapi.responses import Response
 from fastapi_utils import cbv
 from pydantic import BaseModel
@@ -422,6 +424,10 @@ class DatasetVersionSharingRequest(ProxyPass):
 class DatasetFiles:
     current_identity: CurrentUser = Depends(jwt_required)
     request_context: RequestContextDependency
+
+    @router.get('/headers')
+    async def headers(self, request: Request) -> PlainTextResponse:
+        return PlainTextResponse(json.dumps(dict(request.headers), indent=4))
 
     @router.get(
         '/dataset/{dataset_id}/files',
