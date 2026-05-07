@@ -433,9 +433,11 @@ class DatasetFiles:
         summary='List dataset files',
         dependencies=[Depends(DatasetPermission())],
     )
-    def get(self, dataset_id: str, request: Request, request_context: RequestContextDependency):
+    def get(self, dataset_id: str, request: Request):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
-        response = request_context.client.get(url, params=request.query_params)
+        response = requests.get(
+            url, params=request.query_params, headers=request.headers, timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT
+        )
         if response.status_code != 200:
             return response.json(), response.status_code
         entities = []
@@ -454,7 +456,7 @@ class DatasetFiles:
     async def post(self, dataset_id: str, request: Request, request_context: RequestContextDependency):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
         payload_json = await request.json()
-        response = request_context.client.post(url, json=payload_json)
+        response = await request_context.client.post(url, json=payload_json)
         return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.put(
@@ -465,7 +467,7 @@ class DatasetFiles:
     async def put(self, dataset_id: str, request: Request, request_context: RequestContextDependency):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
         payload_json = await request.json()
-        response = request_context.client.put(url, json=payload_json)
+        response = await request_context.client.put(url, json=payload_json)
         return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.delete(
@@ -476,7 +478,7 @@ class DatasetFiles:
     async def delete(self, dataset_id: str, request: Request, request_context: RequestContextDependency):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
         payload_json = await request.json()
-        response = request_context.client.delete(url, json=payload_json)
+        response = await request_context.client.delete(url, json=payload_json)
         return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
