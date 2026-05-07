@@ -28,6 +28,7 @@ from starlette.datastructures import MultiDict
 from app.auth import jwt_required
 from app.components.exceptions import APIException
 from app.components.exceptions import UnhandledException
+from app.components.request.context import RequestContextDependency
 from app.components.user.models import CurrentUser
 from app.logger import logger
 from config import ConfigClass
@@ -420,6 +421,7 @@ class DatasetVersionSharingRequest(ProxyPass):
 @cbv.cbv(router)
 class DatasetFiles:
     current_identity: CurrentUser = Depends(jwt_required)
+    request_context: RequestContextDependency
 
     @router.get(
         '/dataset/{dataset_id}/files',
@@ -428,9 +430,7 @@ class DatasetFiles:
     )
     def get(self, dataset_id: str, request: Request):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
-        response = requests.get(
-            url, params=request.query_params, headers=request.headers, timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT
-        )
+        response = self.request_context.client.get(url, params=request.query_params)
         if response.status_code != 200:
             return response.json(), response.status_code
         entities = []
@@ -449,10 +449,8 @@ class DatasetFiles:
     async def post(self, dataset_id: str, request: Request):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
         payload_json = await request.json()
-        respon = requests.post(
-            url, json=payload_json, headers=request.headers, timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT
-        )
-        return JSONResponse(content=respon.json(), status_code=respon.status_code)
+        response = self.request_context.client.post(url, json=payload_json)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.put(
         '/dataset/{dataset_id}/files',
@@ -462,10 +460,8 @@ class DatasetFiles:
     async def put(self, dataset_id: str, request: Request):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
         payload_json = await request.json()
-        respon = requests.put(
-            url, json=payload_json, headers=request.headers, timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT
-        )
-        return JSONResponse(content=respon.json(), status_code=respon.status_code)
+        response = self.request_context.client.put(url, json=payload_json)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.delete(
         '/dataset/{dataset_id}/files',
@@ -475,10 +471,8 @@ class DatasetFiles:
     async def delete(self, dataset_id: str, request: Request):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
         payload_json = await request.json()
-        respon = requests.delete(
-            url, json=payload_json, headers=request.headers, timeout=ConfigClass.SERVICE_CLIENT_TIMEOUT
-        )
-        return JSONResponse(content=respon.json(), status_code=respon.status_code)
+        response = self.request_context.client.delete(url, json=payload_json)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 @cbv.cbv(router)
