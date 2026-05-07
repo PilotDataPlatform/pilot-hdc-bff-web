@@ -423,7 +423,6 @@ class DatasetVersionSharingRequest(ProxyPass):
 @cbv.cbv(router)
 class DatasetFiles:
     current_identity: CurrentUser = Depends(jwt_required)
-    request_context: RequestContextDependency
 
     @router.get('/headers')
     async def headers(self, request: Request) -> PlainTextResponse:
@@ -434,9 +433,9 @@ class DatasetFiles:
         summary='List dataset files',
         dependencies=[Depends(DatasetPermission())],
     )
-    def get(self, dataset_id: str, request: Request):
+    def get(self, dataset_id: str, request: Request, request_context: RequestContextDependency):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
-        response = self.request_context.client.get(url, params=request.query_params)
+        response = request_context.client.get(url, params=request.query_params)
         if response.status_code != 200:
             return response.json(), response.status_code
         entities = []
@@ -452,10 +451,10 @@ class DatasetFiles:
         summary='Move dataset files',
         dependencies=[Depends(DatasetPermission())],
     )
-    async def post(self, dataset_id: str, request: Request):
+    async def post(self, dataset_id: str, request: Request, request_context: RequestContextDependency):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
         payload_json = await request.json()
-        response = self.request_context.client.post(url, json=payload_json)
+        response = request_context.client.post(url, json=payload_json)
         return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.put(
@@ -463,10 +462,10 @@ class DatasetFiles:
         summary='Recieve the file list from a project and Copy them under the dataset',
         dependencies=[Depends(DatasetPermission())],
     )
-    async def put(self, dataset_id: str, request: Request):
+    async def put(self, dataset_id: str, request: Request, request_context: RequestContextDependency):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
         payload_json = await request.json()
-        response = self.request_context.client.put(url, json=payload_json)
+        response = request_context.client.put(url, json=payload_json)
         return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.delete(
@@ -474,10 +473,10 @@ class DatasetFiles:
         summary='Remove dataset files',
         dependencies=[Depends(DatasetPermission())],
     )
-    async def delete(self, dataset_id: str, request: Request):
+    async def delete(self, dataset_id: str, request: Request, request_context: RequestContextDependency):
         url = f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}/files'
         payload_json = await request.json()
-        response = self.request_context.client.delete(url, json=payload_json)
+        response = request_context.client.delete(url, json=payload_json)
         return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
